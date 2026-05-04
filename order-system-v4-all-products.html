@@ -1,590 +1,1988 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MEGAGEN Order System</title>
+  <title>MEGAGEN 주문 시스템 - 전체 제품</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; }
-    .step-active { border-color: #2563eb; color: #2563eb; font-weight: 600; background: #eff6ff; }
-    .step-done { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .step-active { border-color: #2563eb; color: #2563eb; font-weight: 600; }
+    .step-completed { border-color: #10b981; color: #10b981; }
     .step-inactive { border-color: #e5e7eb; color: #9ca3af; }
-    .product-card { transition: all 0.15s; }
-    .product-card:hover { border-color: #93c5fd; background: #f8faff; }
-    .product-card.selected { border-color: #2563eb; background: #eff6ff; }
-    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    .radio-custom { width: 20px; height: 20px; }
+    .option-selected { border-color: #2563eb !important; background-color: #eff6ff !important; }
   </style>
 </head>
 <body class="bg-gray-50">
 
-<!-- HEADER -->
-<header class="bg-blue-600 text-white sticky top-0 z-20 shadow-lg">
-  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-    <div>
-      <h1 class="font-bold text-lg">MEGAGEN Order System</h1>
-      <p class="text-blue-200 text-xs" id="step-label">Step 1: Select Customer</p>
-    </div>
-    <button onclick="showOrderHistory()" class="bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5">
-      📋 Orders
-    </button>
-  </div>
-  <!-- Step Indicator -->
-  <div class="flex max-w-3xl mx-auto">
-    <div id="s1" class="flex-1 py-2 text-center text-xs border-b-2 border-white/80 text-white font-semibold cursor-pointer" onclick="gotoStep(1)">Customer</div>
-    <div id="s2" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(2)">Contract</div>
-    <div id="s3" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(3)">Products</div>
-    <div id="s4" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(4)">Delivery</div>
-    <div id="s5" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(5)">Review</div>
-  </div>
-</header>
-
-<div class="max-w-3xl mx-auto px-4 py-6">
-
-  <!-- STEP 1: Customer -->
-  <div id="step-1">
-    <h2 class="text-lg font-bold text-gray-900 mb-4">Select Customer</h2>
-    <div class="mb-4">
-      <input id="customer-search" type="text" placeholder="Search customer name or code..." oninput="filterCustomers()"
-        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500"/>
-    </div>
-    <div id="customer-list" class="space-y-2 mb-6"></div>
-    <button onclick="showAddCustomer()" class="w-full border-2 border-dashed border-blue-300 text-blue-600 rounded-xl py-3 text-sm font-medium hover:bg-blue-50 transition-colors">
-      + Add New Customer
-    </button>
-  </div>
-
-  <!-- STEP 2: Contract Balance -->
-  <div id="step-2" class="hidden">
-    <h2 class="text-lg font-bold text-gray-900 mb-1">Contract Balance</h2>
-    <p class="text-gray-500 text-sm mb-6">Customer: <span id="s2-customer" class="font-semibold text-gray-800"></span></p>
-    <div id="contract-info" class="bg-white rounded-2xl p-6 shadow-sm border"></div>
-    <div id="contract-warning" class="mt-4 rounded-xl p-4 hidden"></div>
-    <button onclick="gotoStep(3)" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-      Continue to Products →
-    </button>
-  </div>
-
-  <!-- STEP 3: Products -->
-  <div id="step-3" class="hidden">
-    <h2 class="text-lg font-bold text-gray-900 mb-4">Select Products</h2>
-    <!-- Category Tabs -->
-    <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
-      <button onclick="selectCategory('Fixture')" id="cat-Fixture" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600 text-white">Fixture</button>
-      <button onclick="selectCategory('Cover Screw')" id="cat-Cover Screw" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Cover Screw</button>
-      <button onclick="selectCategory('Healing Abutment')" id="cat-Healing Abutment" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Healing Abutment</button>
-      <button onclick="selectCategory('Impression Coping')" id="cat-Impression Coping" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Impression Coping</button>
-      <button onclick="selectCategory('Abutment')" id="cat-Abutment" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Abutment</button>
-      <button onclick="selectCategory('Membrane')" id="cat-Membrane" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Membrane</button>
-      <button onclick="selectCategory('Bone Graft')" id="cat-Bone Graft" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Bone Graft</button>
-      <button onclick="selectCategory('Accessory')" id="cat-Accessory" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Accessory</button>
-    </div>
-    <div id="product-list" class="space-y-2 mb-4"></div>
-    <!-- Cart Summary -->
-    <div id="cart-summary" class="bg-blue-50 rounded-xl p-4 border border-blue-100 hidden">
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-sm font-semibold text-blue-800">Cart</span>
-        <span id="cart-count" class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full"></span>
+  <!-- 헤더 -->
+  <header class="bg-blue-600 text-white p-4 sticky top-0 z-10 shadow-md">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold">MEGAGEN 주문 시스템</h1>
+        <p class="text-sm text-blue-100" id="step-title">1. 고객 선택</p>
       </div>
-      <div id="cart-items" class="space-y-1 text-xs text-blue-700"></div>
-      <div class="mt-2 pt-2 border-t border-blue-200 flex justify-between">
-        <span class="text-sm font-semibold text-blue-800">Total</span>
-        <span id="cart-total" class="text-sm font-bold text-blue-900"></span>
+      <div class="flex items-center gap-3">
+        <button onclick="showOrderHistory()" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 rounded-lg text-sm font-semibold flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+          <span>주문 내역</span>
+        </button>
+        <div class="text-right" id="customer-info" style="display:none;">
+          <p class="font-semibold" id="customer-name"></p>
+          <p class="text-xs text-blue-100" id="customer-code"></p>
+        </div>
       </div>
     </div>
-    <button onclick="gotoStep(4)" class="mt-4 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-      Continue to Delivery →
-    </button>
+  </header>
+
+  <!-- 진행 표시기 -->
+  <div class="bg-white border-b shadow-sm">
+    <div class="max-w-4xl mx-auto flex">
+      <div id="step-1" class="flex-1 py-3 text-center text-xs border-b-2 step-active cursor-pointer" onclick="goToStep(1)"><div>고객</div></div>
+      <div id="step-2" class="flex-1 py-3 text-center text-xs border-b-2 step-inactive cursor-pointer" onclick="goToStep(2)"><div>계약</div></div>
+      <div id="step-3" class="flex-1 py-3 text-center text-xs border-b-2 step-inactive cursor-pointer" onclick="goToStep(3)"><div>제품</div></div>
+      <div id="step-4" class="flex-1 py-3 text-center text-xs border-b-2 step-inactive cursor-pointer" onclick="goToStep(4)"><div>출고지</div></div>
+      <div id="step-5" class="flex-1 py-3 text-center text-xs border-b-2 step-inactive cursor-pointer" onclick="goToStep(5)"><div>요약</div></div>
+      <div id="step-6" class="flex-1 py-3 text-center text-xs border-b-2 step-inactive"><div>완료</div></div>
+    </div>
   </div>
 
-  <!-- STEP 4: Delivery -->
-  <div id="step-4" class="hidden">
-    <h2 class="text-lg font-bold text-gray-900 mb-4">Delivery Method</h2>
-    <div class="space-y-3">
-      <label class="block bg-white border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 transition-colors" id="delivery-courier-card">
-        <input type="radio" name="delivery" value="courier" onchange="selectDelivery('courier')" class="hidden">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">🚚</span>
+  <!-- 메인 컨텐츠 -->
+  <main class="max-w-4xl mx-auto p-4 pb-24">
+    
+    <!-- Step 1: 고객 선택 -->
+    <div id="content-1" class="step-content">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">고객 선택</h2>
+      <div class="mb-4 flex gap-3">
+        <input type="text" id="customer-search" placeholder="고객명, 클리닉명, 고객코드로 검색..." 
+          class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" oninput="searchCustomers()">
+        <button onclick="showNewCustomerForm()" class="px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 whitespace-nowrap">
+          + 신규 등록
+        </button>
+      </div>
+      
+      <!-- 신규 고객 등록 폼 -->
+      <div id="new-customer-form" class="bg-white border-2 border-green-500 rounded-lg p-6 mb-4" style="display:none;">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-gray-900">신규 고객 등록</h3>
+          <button onclick="hideNewCustomerForm()" class="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        
+        <div class="space-y-4">
           <div>
-            <p class="font-semibold text-gray-900">Courier Delivery</p>
-            <p class="text-sm text-gray-500">Shipped to clinic address</p>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">고객명 *</label>
+            <input type="text" id="new-customer-name" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="예: 서울치과">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">클리닉명 *</label>
+            <input type="text" id="new-clinic-name" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="예: Seoul Dental Clinic">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 *</label>
+            <input type="tel" id="new-phone" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="예: 02-1234-5678">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">우편번호 *</label>
+            <div class="flex gap-2">
+              <input type="text" id="new-zipcode" class="flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="예: 1000" maxlength="4">
+              <button onclick="searchZipcode()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">주소 검색</button>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">기본 주소</label>
+            <input type="text" id="new-base-address" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100" placeholder="우편번호 검색 후 자동 입력" readonly>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">상세 주소 *</label>
+            <input type="text" id="new-detail-address" class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none" placeholder="예: Unit 301, 3rd Floor">
+          </div>
+          
+          <div class="flex gap-3 pt-4">
+            <button onclick="saveNewCustomer()" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700">등록</button>
+            <button onclick="hideNewCustomerForm()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">취소</button>
           </div>
         </div>
-      </label>
-      <label class="block bg-white border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 transition-colors" id="delivery-office-card">
-        <input type="radio" name="delivery" value="office" onchange="selectDelivery('office')" class="hidden">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">🏢</span>
-          <div>
-            <p class="font-semibold text-gray-900">Office Pick-up</p>
-            <p class="text-sm text-gray-500">Collect from MEGAGEN office</p>
+      </div>
+      
+      <div id="customer-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Step 2: 계약 선택 -->
+    <div id="content-2" class="step-content" style="display:none;">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">계약 선택</h2>
+      <p class="text-gray-600 mb-4">출고를 연결할 계약을 선택하세요</p>
+      <div id="contract-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Step 3: 제품 선택 -->
+    <div id="content-3" class="step-content" style="display:none;">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">제품 선택</h2>
+      
+      <!-- 대분류 -->
+      <div class="grid grid-cols-3 gap-3 mb-6">
+        <button onclick="selectMainCategory('products')" id="cat-products" class="p-4 border-2 border-blue-600 bg-blue-50 text-blue-700 rounded-lg font-semibold">제품</button>
+        <button onclick="selectMainCategory('goods')" id="cat-goods" class="p-4 border-2 border-gray-300 bg-white text-gray-700 rounded-lg hover:border-gray-400">상품</button>
+        <button onclick="selectMainCategory('equipment')" id="cat-equipment" class="p-4 border-2 border-gray-300 bg-white text-gray-700 rounded-lg hover:border-gray-400">장비</button>
+      </div>
+
+      <!-- 제품 - IMPLANT SYSTEM -->
+      <div id="category-products" class="category-content">
+        <!-- 시스템 선택 -->
+        <div id="system-select" class="system-view">
+          <h3 class="font-semibold text-lg mb-3">IMPLANT SYSTEM</h3>
+          <div class="grid grid-cols-1 gap-3">
+            <button onclick="selectImplantSystem('BLUE_DIAMOND')" class="bg-white border-2 border-gray-200 rounded-lg p-6 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-2xl font-bold text-gray-900 mb-1">1. BLUE DIAMOND</p>
+                  <p class="text-sm text-gray-600">블루다이아몬드 임플란트 시스템</p>
+                  <p class="text-xs text-blue-600 mt-2">8개 카테고리 • 455개 제품</p>
+                </div>
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </div>
+            </button>
+            <button onclick="selectImplantSystem('ARI')" class="bg-white border-2 border-gray-200 rounded-lg p-6 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+              <div class="flex items-center justify-between">
+                <div><p class="text-2xl font-bold text-gray-900 mb-1">2. ARI</p><p class="text-sm text-gray-600">아리 임플란트 시스템</p><p class="text-xs text-yellow-600 mt-2">준비 중</p></div>
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </div>
+            </button>
+            <button onclick="selectImplantSystem('ST')" class="bg-white border-2 border-gray-200 rounded-lg p-6 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+              <div class="flex items-center justify-between">
+                <div><p class="text-2xl font-bold text-gray-900 mb-1">3. ST</p><p class="text-sm text-gray-600">ST 임플란트 시스템</p><p class="text-xs text-yellow-600 mt-2">준비 중</p></div>
+                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </div>
+            </button>
           </div>
         </div>
-      </label>
+
+        <!-- 카테고리 선택 -->
+        <div id="category-select" class="category-view" style="display:none;">
+          <button onclick="backToSystemSelect()" class="mb-4 flex items-center text-blue-600 hover:text-blue-700">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <span class="font-semibold">IMPLANT SYSTEM으로 돌아가기</span>
+          </button>
+          <h3 class="font-semibold text-lg mb-1" id="selected-system-name">BLUE DIAMOND</h3>
+          <p class="text-sm text-gray-600 mb-4">제품 카테고리를 선택하세요</p>
+          <div class="grid grid-cols-2 gap-4" id="product-categories"></div>
+        </div>
+
+        <!-- 제품 상세 선택 (동적) -->
+        <div id="product-detail" class="product-detail-view" style="display:none;">
+          <button onclick="backToCategorySelect()" class="mb-4 flex items-center text-blue-600 hover:text-blue-700">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <span class="font-semibold">카테고리로 돌아가기</span>
+          </button>
+          <div class="bg-white border-2 border-blue-500 rounded-lg p-6" id="product-detail-content"></div>
+        </div>
+      </div>
+
+      <!-- 상품 -->
+      <div id="category-goods" class="category-content" style="display:none;">
+        <h3 class="font-semibold text-lg mb-3">REGENERATION</h3>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4"><p class="text-yellow-800">REGENERATION 제품은 준비 중입니다.</p></div>
+      </div>
+
+      <!-- 장비 -->
+      <div id="category-equipment" class="category-content" style="display:none;">
+        <h3 class="font-semibold text-lg mb-3">장비</h3>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4"><p class="text-yellow-800">체어, ISQ 2, 엔진 등 장비는 준비 중입니다.</p></div>
+      </div>
+
+      <!-- 장바구니 -->
+      <div id="cart-summary" class="mt-6 bg-white border rounded-lg p-4" style="display:none;">
+        <h4 class="font-semibold mb-2">장바구니</h4>
+        <div id="cart-items" class="space-y-2 mb-3"></div>
+        <div class="border-t pt-2"><div class="flex justify-between font-bold"><span>총액</span><span id="cart-total" class="text-blue-600">₱0</span></div></div>
+      </div>
     </div>
-    <div id="delivery-address-block" class="mt-4 bg-white rounded-xl p-4 border hidden">
-      <p class="text-sm font-medium text-gray-700 mb-2">Delivery Address</p>
-      <textarea id="delivery-address" rows="3" placeholder="Enter delivery address..."
-        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"></textarea>
-      <input id="delivery-zip" type="text" placeholder="Postal Code"
-        class="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"/>
+
+    <!-- Step 4: 출고지 선택 -->
+    <div id="content-4" class="step-content" style="display:none;">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">출고지 선택</h2>
+      <div id="delivery-options" class="space-y-3"></div>
     </div>
-    <div class="mt-4">
-      <label class="text-sm font-medium text-gray-700 block mb-1">Special Instructions (optional)</label>
-      <textarea id="special-notes" rows="2" placeholder="Any special requests..."
-        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500"></textarea>
+
+    <!-- Step 5: 주문 요약 -->
+    <div id="content-5" class="step-content" style="display:none;">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">주문 요약</h2>
+      <div id="order-summary"></div>
     </div>
-    <button onclick="gotoStep(5)" class="mt-4 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-      Review Order →
-    </button>
+
+    <!-- Step 6: 주문 완료 -->
+    <div id="content-6" class="step-content" style="display:none;">
+      <div class="text-center py-12">
+        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">주문이 완료되었습니다!</h2>
+        <p class="text-gray-600 mb-8">물류 담당자가 주문을 확인하고 처리합니다.</p>
+        <button onclick="newOrder()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700">새 주문 접수</button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 하단 고정 버튼 -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
+    <div class="max-w-4xl mx-auto flex gap-3">
+      <button id="btn-cart" onclick="toggleCart()" class="px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        <span id="cart-count">0</span>
+      </button>
+      <button id="btn-back" onclick="previousStep()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300" style="display:none;">이전</button>
+      <button id="btn-next" onclick="nextStep()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">다음</button>
+    </div>
   </div>
 
-  <!-- STEP 5: Review & Submit -->
-  <div id="step-5" class="hidden">
-    <h2 class="text-lg font-bold text-gray-900 mb-4">Order Review</h2>
-    <div id="order-review" class="space-y-4"></div>
-    <button onclick="submitOrder()" class="mt-6 w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-colors text-base">
-      ✓ Submit Order
-    </button>
-    <button onclick="gotoStep(4)" class="mt-2 w-full border border-gray-300 text-gray-600 py-3 rounded-xl text-sm hover:bg-gray-50">
-      ← Back
-    </button>
-  </div>
-
-</div>
-
-<!-- ORDER HISTORY MODAL -->
-<div id="history-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-start justify-center pt-16 px-4">
-  <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
-    <div class="p-5 border-b flex items-center justify-between">
-      <h3 class="font-bold text-gray-900">Order History 주문 내역</h3>
-      <button onclick="closeHistory()" class="text-gray-400 hover:text-gray-700">✕</button>
-    </div>
-    <div id="history-content" class="overflow-y-auto p-4 flex-1"></div>
-  </div>
-</div>
-
-<!-- ADD CUSTOMER MODAL -->
-<div id="add-customer-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-center justify-center px-4">
-  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-bold text-gray-900">Add New Customer</h3>
-      <button onclick="closeAddCustomer()" class="text-gray-400 hover:text-gray-700">✕</button>
-    </div>
-    <div class="space-y-3">
-      <div><label class="text-xs font-medium text-gray-600">Clinic Name *</label>
-        <input id="new-clinic" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-      <div><label class="text-xs font-medium text-gray-600">Doctor Name *</label>
-        <input id="new-doctor" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-      <div><label class="text-xs font-medium text-gray-600">City / Province</label>
-        <input id="new-city" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-      <div><label class="text-xs font-medium text-gray-600">Postal Code</label>
-        <input id="new-zip" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-      <div><label class="text-xs font-medium text-gray-600">Contract Amount (₱)</label>
-        <input id="new-contract" type="number" placeholder="500000" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-      <div><label class="text-xs font-medium text-gray-600">Phone</label>
-        <input id="new-phone" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
-    </div>
-    <button onclick="saveNewCustomer()" class="mt-5 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-      Save Customer
-    </button>
-  </div>
-</div>
-
-<!-- SUCCESS MODAL -->
-<div id="success-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-center justify-center px-4">
-  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-8 text-center">
-    <div class="text-5xl mb-4">✅</div>
-    <h3 class="text-xl font-bold text-gray-900 mb-2">Order Submitted!</h3>
-    <p class="text-gray-500 text-sm mb-2">주문이 접수되었습니다</p>
-    <p id="success-order-no" class="text-blue-600 font-semibold text-sm mb-6"></p>
-    <button onclick="resetOrder()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-      New Order
-    </button>
-  </div>
-</div>
-
-<script>
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const PRODUCTS = {
-  'Fixture': [
-    { code: 'TS III SA 3.5x10', name: 'TS III SA Fixture', size: '3.5 x 10mm', srp: 8500, dealer: 4800 },
-    { code: 'TS III SA 4.0x10', name: 'TS III SA Fixture', size: '4.0 x 10mm', srp: 8500, dealer: 4800 },
-    { code: 'TS III SA 4.5x10', name: 'TS III SA Fixture', size: '4.5 x 10mm', srp: 8500, dealer: 4800 },
-    { code: 'TS III SA 5.0x10', name: 'TS III SA Fixture', size: '5.0 x 10mm', srp: 8500, dealer: 4800 },
-    { code: 'ANYRIDGE 3.5x10', name: 'AnyRidge Fixture', size: '3.5 x 10mm', srp: 11000, dealer: 6200 },
-    { code: 'ANYRIDGE 4.0x10', name: 'AnyRidge Fixture', size: '4.0 x 10mm', srp: 11000, dealer: 6200 },
-    { code: 'ANYRIDGE 4.5x10', name: 'AnyRidge Fixture', size: '4.5 x 10mm', srp: 11000, dealer: 6200 },
-    { code: 'RESCUE 4.0x10', name: 'Rescue Fixture', size: '4.0 x 10mm', srp: 12000, dealer: 6800 },
-  ],
-  'Cover Screw': [
-    { code: 'CS-TS-3.5', name: 'Cover Screw TS III', size: '3.5mm', srp: 800, dealer: 400 },
-    { code: 'CS-TS-4.0', name: 'Cover Screw TS III', size: '4.0mm', srp: 800, dealer: 400 },
-    { code: 'CS-AR-3.5', name: 'Cover Screw AnyRidge', size: '3.5mm', srp: 900, dealer: 500 },
-    { code: 'CS-AR-4.0', name: 'Cover Screw AnyRidge', size: '4.0mm', srp: 900, dealer: 500 },
-  ],
-  'Healing Abutment': [
-    { code: 'HA-TS-4x4', name: 'Healing Abutment TS', size: '4.0 x 4mm', srp: 1800, dealer: 950 },
-    { code: 'HA-TS-4x6', name: 'Healing Abutment TS', size: '4.0 x 6mm', srp: 1800, dealer: 950 },
-    { code: 'HA-AR-5x4', name: 'Healing Abutment AR', size: '5.0 x 4mm', srp: 2000, dealer: 1100 },
-    { code: 'HA-AR-5x6', name: 'Healing Abutment AR', size: '5.0 x 6mm', srp: 2000, dealer: 1100 },
-  ],
-  'Impression Coping': [
-    { code: 'IC-TS-OPEN', name: 'Impression Coping TS Open', size: 'Open Tray', srp: 2500, dealer: 1400 },
-    { code: 'IC-TS-CLOSED', name: 'Impression Coping TS Closed', size: 'Closed Tray', srp: 2500, dealer: 1400 },
-    { code: 'IC-AR-OPEN', name: 'Impression Coping AR Open', size: 'Open Tray', srp: 2800, dealer: 1600 },
-  ],
-  'Abutment': [
-    { code: 'ABU-STRAIGHT-4', name: 'Straight Abutment', size: '4.0mm', srp: 3500, dealer: 2000 },
-    { code: 'ABU-ANGLE-15', name: 'Angled Abutment 15°', size: '4.0mm', srp: 4200, dealer: 2400 },
-    { code: 'ABU-UCLA', name: 'UCLA Abutment', size: 'Universal', srp: 3800, dealer: 2100 },
-  ],
-  'Membrane': [
-    { code: 'MEM-RESORBABLE-S', name: 'Resorbable Membrane', size: '20x30mm', srp: 12000, dealer: 7000 },
-    { code: 'MEM-RESORBABLE-L', name: 'Resorbable Membrane', size: '30x40mm', srp: 16000, dealer: 9500 },
-    { code: 'MEM-TITANIUM', name: 'Titanium Mesh', size: '30x40mm', srp: 22000, dealer: 13000 },
-  ],
-  'Bone Graft': [
-    { code: 'BG-XENOGRAFT-0.25', name: 'Xenograft (Bovine)', size: '0.25g', srp: 8000, dealer: 4500 },
-    { code: 'BG-XENOGRAFT-0.5', name: 'Xenograft (Bovine)', size: '0.5g', srp: 13000, dealer: 7500 },
-    { code: 'BG-ALLOGRAFT-0.5', name: 'Allograft', size: '0.5g', srp: 15000, dealer: 8800 },
-  ],
-  'Accessory': [
-    { code: 'ACC-DRIVER-HEX', name: 'Hex Driver', size: '1.2mm', srp: 1500, dealer: 800 },
-    { code: 'ACC-RATCHET', name: 'Ratchet Wrench', size: 'Universal', srp: 8500, dealer: 5000 },
-    { code: 'ACC-TORQUE', name: 'Torque Wrench 35Ncm', size: 'Universal', srp: 25000, dealer: 15000 },
-    { code: 'ACC-DRILL-KIT', name: 'Drill Kit Set', size: 'TS System', srp: 45000, dealer: 28000 },
-  ]
-};
-
-let customers = JSON.parse(localStorage.getItem('mg-customers') || '[]');
-let orders = JSON.parse(localStorage.getItem('mg-orders') || '[]');
-
-if (customers.length === 0) {
-  customers = [
-    { id: 'C001', clinic: 'Bright Smile Dental', doctor: 'Dr. Juan Dela Cruz', city: 'Makati', zip: '1200', contract: 500000, balance: 350000, phone: '09171234567' },
-    { id: 'C002', clinic: 'Sunrise Dental Clinic', doctor: 'Dr. Maria Santos', city: 'Quezon City', zip: '1100', contract: 300000, balance: 240000, phone: '09181234567' },
-    { id: 'C003', clinic: 'Pacific Dental Center', doctor: 'Dr. Roberto Garcia', city: 'Cebu City', zip: '6000', contract: 800000, balance: 85000, phone: '09191234567' },
-    { id: 'C004', clinic: 'MedDental Clinic', doctor: 'Dr. Ana Reyes', city: 'Davao City', zip: '8000', contract: 400000, balance: 35000, phone: '09201234567' },
-  ];
-  saveCustomers();
-}
-
-let state = { customer: null, cart: {}, delivery: null };
-let currentCategory = 'Fixture';
-
-// ── CUSTOMERS ─────────────────────────────────────────────────────────────────
-function saveCustomers() { localStorage.setItem('mg-customers', JSON.stringify(customers)); }
-function saveOrders() { localStorage.setItem('mg-orders', JSON.stringify(orders)); }
-
-function filterCustomers() {
-  const q = document.getElementById('customer-search').value.toLowerCase();
-  const filtered = customers.filter(c =>
-    c.clinic.toLowerCase().includes(q) || c.doctor.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
-  );
-  renderCustomerList(filtered);
-}
-
-function renderCustomerList(list) {
-  const el = document.getElementById('customer-list');
-  if (!list || list.length === 0) {
-    el.innerHTML = '<p class="text-center text-gray-400 py-4 text-sm">No customers found</p>';
-    return;
-  }
-  el.innerHTML = list.map(c => {
-    const pct = (c.balance / c.contract) * 100;
-    const statusColor = pct <= 10 ? 'bg-red-100 text-red-600' : pct <= 30 ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600';
-    const statusText = pct <= 10 ? '⚠ Critical' : pct <= 30 ? '⚡ Low' : '✓ OK';
-    return `
-      <div onclick="selectCustomer('${c.id}')" class="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="font-semibold text-gray-900 text-sm">${c.clinic}</p>
-            <p class="text-xs text-gray-500">${c.doctor} · ${c.city}</p>
-            <p class="text-xs text-gray-400 mt-0.5">${c.id}</p>
+  <!-- 장바구니 슬라이드 패널 -->
+  <div id="cart-panel" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50">
+    <div class="flex flex-col h-full">
+      <!-- 헤더 -->
+      <div class="bg-orange-600 text-white p-4 flex justify-between items-center">
+        <h2 class="text-xl font-bold">장바구니</h2>
+        <button onclick="toggleCart()" class="text-white hover:text-gray-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      
+      <!-- 장바구니 내용 -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div id="cart-panel-items" class="space-y-3"></div>
+        <div id="cart-empty" class="text-center py-12 text-gray-500" style="display:none;">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          <p>장바구니가 비어있습니다</p>
+        </div>
+      </div>
+      
+      <!-- 하단 요약 -->
+      <div class="border-t p-4 bg-gray-50">
+        <!-- 계약 정보 -->
+        <div id="cart-contract-info" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg" style="display:none;">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-semibold text-blue-900">계약 정보</span>
+            <span class="text-xs px-2 py-1 bg-blue-600 text-white rounded" id="cart-contract-discount">0% 할인</span>
           </div>
-          <div class="text-right">
-            <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColor}">${statusText}</span>
-            <p class="text-xs text-gray-500 mt-1">₱${c.balance.toLocaleString()} left</p>
+          <div class="space-y-1 text-xs">
+            <div class="flex justify-between"><span class="text-blue-700">계약 잔액</span><span class="font-semibold text-blue-900" id="cart-contract-balance">₱0</span></div>
+            <div class="flex justify-between"><span class="text-blue-700">주문 금액</span><span class="font-semibold text-orange-600" id="cart-order-amount">₱0</span></div>
+            <div class="flex justify-between pt-1 border-t border-blue-200"><span class="text-blue-700">주문 후 잔액</span><span class="font-bold text-blue-900" id="cart-remaining-balance">₱0</span></div>
           </div>
         </div>
-      </div>`;
-  }).join('');
-}
-
-function selectCustomer(id) {
-  state.customer = customers.find(c => c.id === id);
-  state.cart = {};
-  gotoStep(2);
-}
-
-// ── STEP 2: CONTRACT ──────────────────────────────────────────────────────────
-function renderContractInfo() {
-  const c = state.customer;
-  const pct = (c.balance / c.contract) * 100;
-  const barColor = pct <= 10 ? 'bg-red-500' : pct <= 30 ? 'bg-orange-400' : 'bg-green-500';
-
-  document.getElementById('s2-customer').textContent = `${c.clinic} (${c.doctor})`;
-  document.getElementById('contract-info').innerHTML = `
-    <div class="flex justify-between mb-1">
-      <span class="text-sm text-gray-600">Contract Amount</span>
-      <span class="font-semibold text-gray-900">₱${c.contract.toLocaleString()}</span>
+        
+        <div class="space-y-2 mb-4">
+          <div class="flex justify-between text-sm"><span>상품 개수</span><span id="cart-panel-count">0개</span></div>
+          <div class="flex justify-between text-sm"><span>상품 총액</span><span id="cart-panel-srp">₱0</span></div>
+          <div class="flex justify-between text-sm text-red-600"><span>할인</span><span id="cart-panel-discount">-₱0</span></div>
+          <div class="flex justify-between pt-2 border-t"><span class="font-bold">최종 금액</span><span class="text-2xl font-bold text-orange-600" id="cart-panel-total">₱0</span></div>
+        </div>
+        <button onclick="clearCart()" class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 mb-2">장바구니 비우기</button>
+        <button onclick="toggleCart()" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">닫기</button>
+      </div>
     </div>
-    <div class="flex justify-between mb-3">
-      <span class="text-sm text-gray-600">Remaining Balance</span>
-      <span class="font-bold text-lg ${pct <= 10 ? 'text-red-600' : pct <= 30 ? 'text-orange-500' : 'text-green-600'}">₱${c.balance.toLocaleString()}</span>
+  </div>
+
+  <!-- 장바구니 오버레이 -->
+  <div id="cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40" style="display:none;" onclick="toggleCart()"></div>
+
+  <!-- 주문 내역 모달 -->
+  <div id="order-history-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50" style="display:none;" onclick="closeOrderHistory(event)">
+    <div class="fixed top-0 right-0 h-full w-full md:w-2/3 lg:w-1/2 bg-white shadow-2xl transform translate-x-full transition-transform duration-300" id="order-history-panel" onclick="event.stopPropagation()">
+      <div class="flex flex-col h-full">
+        <!-- 헤더 -->
+        <div class="bg-blue-600 text-white p-4 flex justify-between items-center">
+          <h2 class="text-xl font-bold">주문 내역</h2>
+          <button onclick="closeOrderHistory()" class="text-white hover:text-gray-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        
+        <!-- 주문 목록 -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <div id="order-history-list"></div>
+        </div>
+      </div>
     </div>
-    <div class="w-full bg-gray-100 rounded-full h-3 mb-1">
-      <div class="${barColor} h-3 rounded-full transition-all" style="width:${Math.min(pct,100)}%"></div>
-    </div>
-    <p class="text-xs text-right text-gray-500">${pct.toFixed(1)}% remaining</p>
-  `;
+  </div>
 
-  const warn = document.getElementById('contract-warning');
-  if (pct <= 10) {
-    warn.className = 'mt-4 rounded-xl p-4 bg-red-50 border border-red-200 text-red-700';
-    warn.innerHTML = '⚠️ <strong>Critical:</strong> Balance below 10%. Re-contract required before placing new orders.';
-    warn.classList.remove('hidden');
-  } else if (pct <= 30) {
-    warn.className = 'mt-4 rounded-xl p-4 bg-orange-50 border border-orange-200 text-orange-700';
-    warn.innerHTML = '⚡ <strong>Low Balance:</strong> Below 30%. Please initiate re-contract process soon.';
-    warn.classList.remove('hidden');
-  } else {
-    warn.classList.add('hidden');
-  }
-}
+  <script>
+    // =========================================================================
+    // 데이터
+    // =========================================================================
+    
+    const CUSTOMERS = [
+      { id: 'C001', code: 'C001', name: '서울치과', clinicName: 'Seoul Dental Clinic', phone: '02-1234-5678', address: 'Seoul, Gangnam', type: '신규',
+        contracts: [{ id: 'CT001', name: '월성회원 1', discount: 15, contractAmount: 1000000, usedAmount: 300000, balance: 700000, startDate: '2026-01-01', endDate: '2026-12-31' }]
+      },
+      { id: 'C002', code: 'C002', name: '부산치과', clinicName: 'Busan Dental Clinic', phone: '051-2345-6789', address: 'Busan, Haeundae', type: '기존',
+        contracts: [
+          { id: 'CT002', name: '월성회원 2', discount: 20, contractAmount: 2000000, usedAmount: 1800000, balance: 200000, startDate: '2026-01-01', endDate: '2026-12-31' },
+          { id: 'CT003', name: '월성회원 3', discount: 25, contractAmount: 5000000, usedAmount: 1000000, balance: 4000000, startDate: '2026-03-01', endDate: '2026-12-31' }
+        ]
+      },
+      { id: 'C003', code: 'C003', name: '인천치과', clinicName: 'Incheon Dental Clinic', phone: '032-3456-7890', address: 'Incheon, Songdo', type: '신규', contracts: [] }
+    ];
 
-// ── STEP 3: PRODUCTS ──────────────────────────────────────────────────────────
-function selectCategory(cat) {
-  currentCategory = cat;
-  document.querySelectorAll('.cat-btn').forEach(b => {
-    b.className = 'cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600';
-  });
-  document.getElementById('cat-' + cat).className = 'cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600 text-white';
-  renderProducts();
-}
+    const PRODUCT_CATEGORIES = {
+      fixture: { name: 'Fixture', nameKo: '임플란트', count: 84, price: 14000 },
+      coverScrew: { name: 'Cover Screw', nameKo: '커버 스크류', count: 6, price: 1400 },
+      healingAbutment: { name: 'Healing Abutment', nameKo: '힐링 어버트먼트', count: 336, price: 4000 },
+      abutment: { name: 'Abutment', nameKo: '어버트먼트', count: 9, price: 7000 },
+      analog: { name: 'Analog', nameKo: '아날로그', count: 2, price: 4000 },
+      impressionCoping: { name: 'Impression Coping', nameKo: '임프레션 코핑', count: 5, price: 4000 },
+      scan: { name: 'Scan Components', nameKo: '스캔 컴포넌트', count: 6, price: 5000 },
+      digital: { name: 'Digital Products', nameKo: '디지털 제품', count: 7, price: 8000 }
+    };
 
-function renderProducts() {
-  const products = PRODUCTS[currentCategory] || [];
-  document.getElementById('product-list').innerHTML = products.map(p => {
-    const qty = (state.cart[p.code] || {}).qty || 0;
-    return `
-      <div class="product-card bg-white border border-gray-200 rounded-xl p-4 ${qty > 0 ? 'selected border-blue-400 bg-blue-50' : ''}">
-        <div class="flex items-center justify-between">
+    // Fixture 옵션
+    const FIXTURE_DIAMETERS = [
+      { id: 'NC33', label: 'NC Ø3.3', code: '33' },
+      { id: 'NC37', label: 'NC Ø3.7', code: '37' },
+      { id: 'RC41', label: 'RC Ø4.1', code: '41' },
+      { id: 'RC44', label: 'RC Ø4.4', code: '44' },
+      { id: 'RC48', label: 'RC Ø4.8', code: '48' },
+      { id: 'RC53', label: 'RC Ø5.3', code: '53' }
+    ];
+    const FIXTURE_LENGTHS = ['7', '8.5', '10', '11.5', '13', '15', '18'];
+
+    // Cover Screw 옵션
+    const COVER_SCREW_TYPES = [
+      { id: 'NC', label: 'NC', diameters: [
+        { value: '3.0', label: 'Ø3.0', heights: ['0.5', '1.0'] },
+        { value: '5.0', label: 'Ø5.0', heights: ['0.5'] }
+      ]},
+      { id: 'RC', label: 'RC', diameters: [
+        { value: '3.7', label: 'Ø3.7', heights: ['0.5', '1.0'] },
+        { value: '6.0', label: 'Ø6.0', heights: ['0.5'] }
+      ]}
+    ];
+
+    // Healing Abutment 옵션
+    const HEALING_DIAMETERS = [
+      { id: 'NC30', label: 'NC Ø3.0', prefix: 'BDHAN' },
+      { id: 'NC40', label: 'NC Ø4.0', prefix: 'BDHAN4' },
+      { id: 'RC40', label: 'RC Ø4.0', prefix: 'BDHAR4' },
+      { id: 'RC50', label: 'RC Ø5.0', prefix: 'BDHAR5' },
+      { id: 'RC60', label: 'RC Ø6.0', prefix: 'BDHAR6' },
+      { id: 'RC70', label: 'RC Ø7.0', prefix: 'BDHAR7' }
+    ];
+    const HEALING_PROFILES = ['2', '3', '4', '5', '6', '7', '8', '9'];
+    const HEALING_HEIGHTS = ['3', '4', '5', '6', '7', '8', '9'];
+
+    // Abutment 타입
+    const ABUTMENT_TYPES = [
+      { id: 'ezpost', name: 'EZ Post Abutment', nameKo: 'EZ Post 어버트먼트', variants: ['Zirconia', 'Bridge'], price: 6500, refPrefix: 'EZPS' },
+      { id: 'angled', name: 'Angled Abutment', nameKo: '앵글드 어버트먼트', variants: null, price: 7000, refCode: 'ANGAB001' },
+      { id: 'milling', name: 'Milling Abutment', nameKo: '밀링 어버트먼트', variants: null, price: 8400, refCode: 'MILAB001' },
+      { id: 'ccm', name: 'CCM Abutment', nameKo: 'CCM 어버트먼트', variants: null, price: 8500, refCode: 'CCMAB001' },
+      { id: 'temporary', name: 'Temporary Abutment', nameKo: '템포러리 어버트먼트', variants: ['Zirconia', 'Bridge'], price: 9000, refPrefix: 'TMPA' },
+      { id: 'zioen', name: 'ZIOEN Abutment (Standard)', nameKo: 'ZIOEN 어버트먼트', variants: null, price: 6200, refCode: 'ZIOEN001' },
+      { id: 'tigen', name: 'TIGEN Abutment', nameKo: 'TIGEN 어버트먼트', variants: null, price: 6200, refCode: 'TIGEN001' }
+    ];
+
+    // Analog 타입
+    const ANALOG_TYPES = [
+      { id: 'regular', name: 'Analog', nameKo: '아날로그', price: 3400, refCode: 'ANALOG01' },
+      { id: 'wax', name: 'Wax Replica Analog', nameKo: '왁스 레플리카 아날로그', price: 5000, refCode: 'WRAAN001' }
+    ];
+
+    // Impression Coping 타입
+    const IMPRESSION_COPING_TYPES = [
+      { id: 'transfer', name: 'Transfer', nameKo: '트랜스퍼', variants: ['Zirconia', 'Bridge'], price: 4000, refPrefix: 'ICTR' },
+      { id: 'pickup', name: 'Pick-up', nameKo: '픽업', variants: ['Zirconia', 'Bridge'], price: 4000, refPrefix: 'ICPU' }
+    ];
+
+    // Scan Components 타입
+    const SCAN_TYPES = [
+      { id: 'ab6', name: 'Scan Abutment (6-type)', nameKo: '스캔 어버트먼트 (6-타입)', price: 5000, refCode: 'SCAB6001' },
+      { id: 'abscn', name: 'Scan Abutment (Scanner)', nameKo: '스캔 어버트먼트 (스캐너)', price: 5000, refCode: 'SCABS001' },
+      { id: 'post', name: 'Scan Post', nameKo: '스캔 포스트', price: 8400, refCode: 'SCNPT001' },
+      { id: 'postcar', name: 'Scan Post Carrier', nameKo: '스캔 포스트 캐리어', price: 8400, refCode: 'SCNPC001' },
+      { id: 'ha', name: 'Scan Healing Abutment', nameKo: '스캔 힐링 어버트먼트', price: 3400, refCode: 'SCNHA001' },
+      { id: 'shacar', name: 'S.H.A Carrier', nameKo: 'S.H.A 캐리어', price: 3400, refCode: 'SHACR001' }
+    ];
+
+    // Digital Products 타입
+    const DIGITAL_TYPES = [
+      { id: 'mill', name: 'Milling Machine', nameKo: '밀링 머신', price: 14900, refCode: 'MLMCH001' },
+      { id: 'pekk', name: 'PEKK Block', nameKo: 'PEKK 블록', price: 6200, refCode: 'PEKK0001' },
+      { id: 'pmma', name: 'PMMA Block', nameKo: 'PMMA 블록', price: 6200, refCode: 'PMMA0001' },
+      { id: 'tizr', name: 'Milled Ti-Zr', nameKo: '밀드 Ti-Zr', price: 6200, refCode: 'TIZR0001' },
+      { id: 'hotwax', name: 'Hot Wax', nameKo: '핫 왁스', price: 1540, refCode: 'HTWX0001' },
+      { id: '3dprint', name: '3D Printer', nameKo: '3D 프린터', price: 5000, refCode: '3DPR0001' },
+      { id: 'rpmodel', name: 'RP Model', nameKo: 'RP 모델', price: 5000, refCode: 'RPMD0001' }
+    ];
+
+    // =========================================================================
+    // 상태 관리
+    // =========================================================================
+    
+    let currentStep = 1;
+    let selectedCustomer = null;
+    let selectedContract = null;
+    let selectedSystem = null;
+    let selectedCategory = null;
+    let currentSelection = {};
+    let customerCarts = {}; // 고객별 장바구니
+    let cart = []; // 현재 고객의 장바구니 (참조용)
+    let selectedDelivery = null;
+    let orders = []; // 전체 주문 내역
+    let orderIdCounter = 1; // 주문 ID 카운터
+
+    // =========================================================================
+    // Step 관리
+    // =========================================================================
+    
+    function updateStepUI() {
+      document.querySelectorAll('.step-content').forEach(el => el.style.display = 'none');
+      document.getElementById(`content-${currentStep}`).style.display = 'block';
+      
+      for (let i = 1; i <= 6; i++) {
+        const stepEl = document.getElementById(`step-${i}`);
+        stepEl.classList.remove('step-active', 'step-completed', 'step-inactive');
+        if (i < currentStep) stepEl.classList.add('step-completed');
+        else if (i === currentStep) stepEl.classList.add('step-active');
+        else stepEl.classList.add('step-inactive');
+      }
+      
+      const titles = ['', '고객 선택', '계약 선택', '제품 선택', '출고지 선택', '주문 요약', '주문 완료'];
+      document.getElementById('step-title').textContent = `${currentStep}. ${titles[currentStep]}`;
+      document.getElementById('btn-back').style.display = currentStep > 1 && currentStep < 6 ? 'block' : 'none';
+      document.getElementById('btn-next').style.display = currentStep < 6 ? 'block' : 'none';
+    }
+
+    function goToStep(step) {
+      if (step < currentStep || (step === currentStep + 1 && canProceed())) {
+        currentStep = step;
+        updateStepUI();
+        if (step === 2) loadContracts();
+        if (step === 3) resetProductSelection();
+        if (step === 4) loadDeliveryOptions();
+        if (step === 5) loadOrderSummary();
+      }
+    }
+
+    function nextStep() {
+      if (canProceed()) {
+        currentStep++;
+        updateStepUI();
+        if (currentStep === 2) loadContracts();
+        if (currentStep === 3) resetProductSelection();
+        if (currentStep === 4) loadDeliveryOptions();
+        if (currentStep === 5) loadOrderSummary();
+        if (currentStep === 6) completeOrder();
+      }
+    }
+
+    function previousStep() {
+      if (currentStep > 1) { currentStep--; updateStepUI(); }
+    }
+
+    function canProceed() {
+      if (currentStep === 1) return selectedCustomer !== null;
+      if (currentStep === 2) return true;
+      if (currentStep === 3) return cart.length > 0;
+      if (currentStep === 4) return selectedDelivery !== null;
+      if (currentStep === 5) return true;
+      return false;
+    }
+
+    // =========================================================================
+    // Step 1: 고객 선택
+    // =========================================================================
+    
+    function searchCustomers() {
+      const query = document.getElementById('customer-search').value.toLowerCase();
+      const filtered = CUSTOMERS.filter(c => 
+        c.name.toLowerCase().includes(query) || c.clinicName.toLowerCase().includes(query) || 
+        c.code.toLowerCase().includes(query) || c.phone.includes(query)
+      );
+      
+      const html = filtered.map(c => `
+        <button onclick="selectCustomer('${c.id}')" class="w-full bg-white border-2 border-gray-200 rounded-lg p-4 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-gray-900">${c.name}</span>
+                <span class="text-xs px-2 py-0.5 rounded ${c.type === '신규' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">${c.type}</span>
+              </div>
+              <p class="text-sm text-gray-600">${c.code} | ${c.clinicName}</p>
+              <p class="text-sm text-gray-500">${c.phone}</p>
+            </div>
+            <div class="text-right"><p class="text-xs text-gray-500">계약 ${c.contracts.length}개</p></div>
+          </div>
+        </button>
+      `).join('');
+      
+      document.getElementById('customer-list').innerHTML = html || '<p class="text-gray-500 text-center py-4">검색 결과가 없습니다</p>';
+    }
+
+    function selectCustomer(id) {
+      selectedCustomer = CUSTOMERS.find(c => c.id === id);
+      
+      // 고객별 장바구니 로드
+      if (!customerCarts[id]) {
+        customerCarts[id] = [];
+      }
+      cart = customerCarts[id];
+      
+      document.getElementById('customer-name').textContent = selectedCustomer.name;
+      document.getElementById('customer-code').textContent = selectedCustomer.code;
+      document.getElementById('customer-info').style.display = 'block';
+      
+      // 장바구니 표시 업데이트
+      updateCartDisplay();
+      
+      nextStep();
+    }
+
+    // =========================================================================
+    // Step 2: 계약 선택
+    // =========================================================================
+    
+    function loadContracts() {
+      if (!selectedCustomer) return;
+      
+      let html = `
+        <button onclick="selectContract(null)" class="w-full bg-white border-2 border-gray-300 rounded-lg p-4 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+          <div class="flex justify-between items-center">
+            <div><p class="font-semibold text-gray-900">계약 없이 주문</p><p class="text-sm text-gray-600">SRP 정상가 적용</p></div>
+            <div class="text-right"><p class="text-lg font-semibold text-gray-900">할인 0%</p></div>
+          </div>
+        </button>
+      `;
+      
+      html += selectedCustomer.contracts.map(ct => {
+        const balancePercent = (ct.balance / ct.contractAmount) * 100;
+        const canOrder = ct.balance > 0;
+        return `
+          <button onclick="selectContract('${ct.id}')" class="w-full bg-white border-2 ${canOrder ? 'border-blue-200' : 'border-red-200'} rounded-lg p-4 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+            <div class="flex justify-between items-start mb-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <p class="font-semibold text-gray-900">${ct.name}</p>
+                  <span class="text-xs px-2 py-0.5 rounded ${canOrder ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${canOrder ? '주문 가능' : '잔액 부족'}</span>
+                </div>
+                <p class="text-sm text-gray-600">${ct.startDate} ~ ${ct.endDate}</p>
+              </div>
+              <div class="text-right"><p class="text-2xl font-bold text-blue-600">${ct.discount}%</p><p class="text-xs text-gray-500">할인</p></div>
+            </div>
+            <div class="bg-gray-50 rounded p-3 space-y-1">
+              <div class="flex justify-between text-sm"><span class="text-gray-600">계약액</span><span class="font-semibold">₱${ct.contractAmount.toLocaleString()}</span></div>
+              <div class="flex justify-between text-sm"><span class="text-gray-600">사용액</span><span class="text-gray-700">₱${ct.usedAmount.toLocaleString()}</span></div>
+              <div class="flex justify-between text-sm border-t pt-1"><span class="font-semibold text-gray-700">잔액</span><span class="font-bold ${canOrder ? 'text-green-600' : 'text-red-600'}">₱${ct.balance.toLocaleString()}</span></div>
+              <div class="mt-2"><div class="h-2 bg-gray-200 rounded-full overflow-hidden"><div class="h-full ${canOrder ? 'bg-green-500' : 'bg-red-500'}" style="width: ${balancePercent}%"></div></div></div>
+            </div>
+          </button>
+        `;
+      }).join('');
+      
+      document.getElementById('contract-list').innerHTML = html;
+    }
+
+    function selectContract(id) {
+      if (id) {
+        selectedContract = selectedCustomer.contracts.find(c => c.id === id);
+        if (selectedContract.balance <= 0) {
+          alert('⚠️ 계약 잔액이 부족합니다. 다른 계약을 선택하거나 SRP 가격으로 주문하세요.');
+          return;
+        }
+      } else {
+        selectedContract = null;
+      }
+      nextStep();
+    }
+
+    // =========================================================================
+    // Step 3: 제품 선택
+    // =========================================================================
+    
+    function selectMainCategory(cat) {
+      document.querySelectorAll('[id^="cat-"]').forEach(el => {
+        el.className = 'p-4 border-2 border-gray-300 bg-white text-gray-700 rounded-lg hover:border-gray-400';
+      });
+      document.getElementById(`cat-${cat}`).className = 'p-4 border-2 border-blue-600 bg-blue-50 text-blue-700 rounded-lg font-semibold';
+      document.querySelectorAll('.category-content').forEach(el => el.style.display = 'none');
+      document.getElementById(`category-${cat}`).style.display = 'block';
+      if (cat === 'products') resetProductSelection();
+    }
+
+    function resetProductSelection() {
+      selectedSystem = null;
+      selectedCategory = null;
+      currentSelection = {};
+      document.getElementById('system-select').style.display = 'block';
+      document.getElementById('category-select').style.display = 'none';
+      document.getElementById('product-detail').style.display = 'none';
+    }
+
+    function selectImplantSystem(system) {
+      selectedSystem = system;
+      document.getElementById('selected-system-name').textContent = system === 'BLUE_DIAMOND' ? 'BLUE DIAMOND' : system;
+      if (system !== 'BLUE_DIAMOND') { alert('이 시스템은 준비 중입니다.'); return; }
+      document.getElementById('system-select').style.display = 'none';
+      document.getElementById('category-select').style.display = 'block';
+      loadProductCategories();
+    }
+
+    function backToSystemSelect() {
+      document.getElementById('system-select').style.display = 'block';
+      document.getElementById('category-select').style.display = 'none';
+      document.getElementById('product-detail').style.display = 'none';
+    }
+
+    function loadProductCategories() {
+      const html = Object.entries(PRODUCT_CATEGORIES).map(([key, cat]) => `
+        <button onclick="selectProductCategory('${key}')" class="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition">
+          <p class="font-bold text-gray-900 mb-1">${cat.nameKo}</p>
+          <p class="text-xs text-gray-600 mb-2">${cat.name}</p>
+          <p class="text-sm text-blue-600">${cat.count}개 옵션</p>
+          <p class="text-lg font-bold text-gray-900 mt-2">₱${cat.price.toLocaleString()}</p>
+        </button>
+      `).join('');
+      document.getElementById('product-categories').innerHTML = html;
+    }
+
+    function backToCategorySelect() {
+      document.getElementById('category-select').style.display = 'block';
+      document.getElementById('product-detail').style.display = 'none';
+      currentSelection = {};
+    }
+
+    function selectProductCategory(categoryKey) {
+      selectedCategory = categoryKey;
+      currentSelection = { category: categoryKey };
+      document.getElementById('category-select').style.display = 'none';
+      document.getElementById('product-detail').style.display = 'block';
+      
+      if (categoryKey === 'fixture') showFixtureDetail();
+      else if (categoryKey === 'coverScrew') showCoverScrewDetail();
+      else if (categoryKey === 'healingAbutment') showHealingAbutmentDetail();
+      else if (categoryKey === 'abutment') showAbutmentDetail();
+      else if (categoryKey === 'analog') showAnalogDetail();
+      else if (categoryKey === 'impressionCoping') showImpressionCopingDetail();
+      else if (categoryKey === 'scan') showScanDetail();
+      else if (categoryKey === 'digital') showDigitalDetail();
+    }
+
+    // =========================================================================
+    // Fixture 상세 UI
+    // =========================================================================
+    function showFixtureDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Fixture (임플란트)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">직경 선택</label>
+          <div class="grid grid-cols-3 gap-3" id="diameter-options">
+            ${FIXTURE_DIAMETERS.map(d => `<button onclick="selectOption('diameter','${d.id}')" id="opt-diameter-${d.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-center font-semibold">${d.label}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">길이 선택</label>
+          <select id="length-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+            <option value="">길이를 선택하세요</option>
+            ${FIXTURE_LENGTHS.map(l => `<option value="${l}">${l}mm</option>`).join('')}
+          </select>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">타입 선택</label>
+          <div class="flex gap-6">
+            <label class="flex items-center cursor-pointer"><input type="radio" name="fixture-type" value="Normal" class="radio-custom mr-2" onchange="updateProductInfo()" checked><span class="text-gray-900">Normal</span></label>
+            <label class="flex items-center cursor-pointer"><input type="radio" name="fixture-type" value="Deep" class="radio-custom mr-2" onchange="updateProductInfo()"><span class="text-gray-900">Deep</span></label>
+          </div>
+        </div>
+        ${renderProductFooter(14000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Cover Screw 상세 UI
+    // =========================================================================
+    function showCoverScrewDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Cover Screw (커버 스크류)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">타입 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${COVER_SCREW_TYPES.map(t => `<button onclick="selectOption('csType','${t.id}')" id="opt-csType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-center font-semibold">${t.label}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mb-6" id="cs-diameter-section" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">직경 선택</label>
+          <select id="cs-diameter-select" onchange="loadCoverScrewHeights(); updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">직경을 선택하세요</option>
+          </select>
+        </div>
+        <div class="mb-6" id="cs-height-section" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">높이 선택</label>
+          <select id="cs-height-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">높이를 선택하세요</option>
+          </select>
+        </div>
+        ${renderProductFooter(1400)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Healing Abutment 상세 UI
+    // =========================================================================
+    function showHealingAbutmentDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Healing Abutment (힐링 어버트먼트)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">직경 선택</label>
+          <div class="grid grid-cols-3 gap-3">
+            ${HEALING_DIAMETERS.map(d => `<button onclick="selectOption('haDiameter','${d.id}')" id="opt-haDiameter-${d.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-center font-semibold">${d.label}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Profile 선택 (플랫폼 직경)</label>
+          <select id="ha-profile-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">Profile을 선택하세요</option>
+            ${HEALING_PROFILES.map(p => `<option value="${p}">Profile ${p} (Ø${p}.0mm)</option>`).join('')}
+          </select>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Height 선택</label>
+          <select id="ha-height-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">Height를 선택하세요</option>
+            ${HEALING_HEIGHTS.map(h => `<option value="${h}">Height ${h}mm</option>`).join('')}
+          </select>
+        </div>
+        ${renderProductFooter(4000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Abutment 상세 UI
+    // =========================================================================
+    function showAbutmentDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Abutment (어버트먼트)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">타입 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${ABUTMENT_TYPES.map(t => `<button onclick="selectOption('abType','${t.id}')" id="opt-abType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-left"><p class="font-semibold">${t.nameKo}</p><p class="text-xs text-gray-600 mt-1">₱${t.price.toLocaleString()}</p></button>`).join('')}
+          </div>
+        </div>
+        <div class="mb-6" id="ab-variant-section" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">옵션 선택</label>
+          <select id="ab-variant-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">옵션을 선택하세요</option>
+          </select>
+        </div>
+        ${renderProductFooter(7000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Analog 상세 UI
+    // =========================================================================
+    function showAnalogDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Analog (아날로그)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">타입 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${ANALOG_TYPES.map(t => `<button onclick="selectOption('analogType','${t.id}')" id="opt-analogType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-left"><p class="font-semibold">${t.nameKo}</p><p class="text-xs text-gray-600 mt-1">₱${t.price.toLocaleString()}</p></button>`).join('')}
+          </div>
+        </div>
+        ${renderProductFooter(4000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Impression Coping 상세 UI
+    // =========================================================================
+    function showImpressionCopingDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Impression Coping (임프레션 코핑)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">타입 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${IMPRESSION_COPING_TYPES.map(t => `<button onclick="selectOption('icType','${t.id}')" id="opt-icType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-center font-semibold">${t.nameKo}</button>`).join('')}
+          </div>
+        </div>
+        <div class="mb-6" id="ic-variant-section" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">옵션 선택</label>
+          <select id="ic-variant-select" onchange="updateProductInfo()" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg">
+            <option value="">옵션을 선택하세요</option>
+          </select>
+        </div>
+        ${renderProductFooter(4000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Scan Components 상세 UI
+    // =========================================================================
+    function showScanDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Scan Components (스캔 컴포넌트)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">제품 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${SCAN_TYPES.map(t => `<button onclick="selectOption('scanType','${t.id}')" id="opt-scanType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-left"><p class="font-semibold text-sm">${t.nameKo}</p><p class="text-xs text-gray-600 mt-1">₱${t.price.toLocaleString()}</p></button>`).join('')}
+          </div>
+        </div>
+        ${renderProductFooter(5000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // Digital Products 상세 UI
+    // =========================================================================
+    function showDigitalDetail() {
+      let html = `
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Digital Products (디지털 제품)</h3>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">제품 선택</label>
+          <div class="grid grid-cols-2 gap-3">
+            ${DIGITAL_TYPES.map(t => `<button onclick="selectOption('digitalType','${t.id}')" id="opt-digitalType-${t.id}" class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 transition text-left"><p class="font-semibold text-sm">${t.nameKo}</p><p class="text-xs text-gray-600 mt-1">₱${t.price.toLocaleString()}</p></button>`).join('')}
+          </div>
+        </div>
+        ${renderProductFooter(8000)}
+      `;
+      document.getElementById('product-detail-content').innerHTML = html;
+    }
+
+    // =========================================================================
+    // 공통 UI 렌더링
+    // =========================================================================
+    function renderProductFooter(defaultPrice) {
+      return `
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">수량</label>
+          <div class="flex items-center gap-3">
+            <button onclick="decreaseQuantity()" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-100 font-bold">-</button>
+            <input type="number" id="product-quantity" value="1" min="1" class="w-20 text-center border-2 border-gray-300 rounded-lg py-2 font-semibold" readonly>
+            <button onclick="increaseQuantity()" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-100 font-bold">+</button>
+          </div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <div class="flex justify-between items-center mb-2"><span class="text-sm text-gray-600">REF 코드</span><span class="font-mono font-semibold" id="product-ref">-</span></div>
+          <div class="flex justify-between items-center mb-2"><span class="text-sm text-gray-600">SRP 가격</span><span class="font-semibold" id="product-srp">₱${defaultPrice.toLocaleString()}</span></div>
+          <div class="flex justify-between items-center mb-2"><span class="text-sm text-gray-600">할인가</span><span class="text-lg font-bold text-blue-600" id="product-discount">₱${defaultPrice.toLocaleString()}</span></div>
+          <div class="flex justify-between items-center"><span class="text-sm text-gray-600">재고</span><span class="text-sm font-semibold text-green-600" id="product-stock">재고 있음</span></div>
+        </div>
+        <button onclick="addProductToCart()" class="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition">장바구니 담기</button>
+      `;
+    }
+
+    // =========================================================================
+    // 선택 옵션 처리
+    // =========================================================================
+    function selectOption(optionType, value) {
+      currentSelection[optionType] = value;
+      
+      // 하이라이트 업데이트
+      document.querySelectorAll(`[id^="opt-${optionType}-"]`).forEach(el => {
+        el.classList.remove('option-selected');
+        el.classList.add('border-gray-300');
+      });
+      const selected = document.getElementById(`opt-${optionType}-${value}`);
+      if (selected) {
+        selected.classList.add('option-selected');
+        selected.classList.remove('border-gray-300');
+      }
+      
+      // Cover Screw 타입별 직경/높이 옵션 로드
+      if (optionType === 'csType') {
+        const type = COVER_SCREW_TYPES.find(t => t.id === value);
+        if (type) {
+          const diameterSelect = document.getElementById('cs-diameter-select');
+          diameterSelect.innerHTML = '<option value="">직경을 선택하세요</option>' + 
+            type.diameters.map(d => `<option value="${d.value}">${d.label}</option>`).join('');
+          document.getElementById('cs-diameter-section').style.display = 'block';
+          document.getElementById('cs-height-section').style.display = 'none';
+        }
+      }
+      
+      // Abutment 타입별 variant 옵션 로드
+      if (optionType === 'abType') {
+        const type = ABUTMENT_TYPES.find(t => t.id === value);
+        if (type && type.variants) {
+          const variantSelect = document.getElementById('ab-variant-select');
+          variantSelect.innerHTML = '<option value="">옵션을 선택하세요</option>' + 
+            type.variants.map(v => `<option value="${v}">${v}</option>`).join('');
+          document.getElementById('ab-variant-section').style.display = 'block';
+        } else {
+          document.getElementById('ab-variant-section').style.display = 'none';
+        }
+      }
+      
+      // Impression Coping 타입별 variant 옵션 로드
+      if (optionType === 'icType') {
+        const type = IMPRESSION_COPING_TYPES.find(t => t.id === value);
+        if (type && type.variants) {
+          const variantSelect = document.getElementById('ic-variant-select');
+          variantSelect.innerHTML = '<option value="">옵션을 선택하세요</option>' + 
+            type.variants.map(v => `<option value="${v}">${v}</option>`).join('');
+          document.getElementById('ic-variant-section').style.display = 'block';
+        }
+      }
+      
+      updateProductInfo();
+    }
+
+    // Cover Screw 직경 선택시 높이 옵션 로드
+    function loadCoverScrewHeights() {
+      const typeId = currentSelection.csType;
+      const diameter = document.getElementById('cs-diameter-select').value;
+      if (!typeId || !diameter) return;
+      
+      const type = COVER_SCREW_TYPES.find(t => t.id === typeId);
+      const diam = type.diameters.find(d => d.value === diameter);
+      if (diam) {
+        const heightSelect = document.getElementById('cs-height-select');
+        heightSelect.innerHTML = '<option value="">높이를 선택하세요</option>' + 
+          diam.heights.map(h => `<option value="${h}">${h}mm</option>`).join('');
+        document.getElementById('cs-height-section').style.display = 'block';
+      }
+    }
+
+    // =========================================================================
+    // 제품 정보 업데이트
+    // =========================================================================
+    function updateProductInfo() {
+      let refCode = '-';
+      let price = 0;
+      let productName = '';
+      
+      if (selectedCategory === 'fixture') {
+        const diameter = currentSelection.diameter;
+        const length = document.getElementById('length-select')?.value;
+        const type = document.querySelector('input[name="fixture-type"]:checked')?.value;
+        if (diameter && length && type) {
+          const d = FIXTURE_DIAMETERS.find(d => d.id === diameter);
+          const typeCode = type === 'Normal' ? 'C' : 'DC';
+          refCode = `APO${d.code}${length.replace('.', '')}${typeCode}`;
+          price = 14000;
+          productName = `Fixture ${d.label} ${length}mm ${type}`;
+        }
+      } else if (selectedCategory === 'coverScrew') {
+        loadCoverScrewHeights();
+        const csType = currentSelection.csType;
+        const diameter = document.getElementById('cs-diameter-select')?.value;
+        const height = document.getElementById('cs-height-select')?.value;
+        if (csType && diameter && height) {
+          const typeCode = csType === 'NC' ? 'N' : 'R';
+          refCode = `AROCS${typeCode}${diameter.replace('.', '')}${height.replace('.', '')}`;
+          price = 1400;
+          productName = `Cover Screw ${csType} Ø${diameter} H${height}`;
+        }
+      } else if (selectedCategory === 'healingAbutment') {
+        const diameter = currentSelection.haDiameter;
+        const profile = document.getElementById('ha-profile-select')?.value;
+        const height = document.getElementById('ha-height-select')?.value;
+        if (diameter && profile && height) {
+          const d = HEALING_DIAMETERS.find(d => d.id === diameter);
+          refCode = `${d.prefix}${profile}${height}`;
+          price = 4000;
+          productName = `Healing Abutment ${d.label} P${profile} H${height}`;
+        }
+      } else if (selectedCategory === 'abutment') {
+        const typeId = currentSelection.abType;
+        const variant = document.getElementById('ab-variant-select')?.value;
+        if (typeId) {
+          const type = ABUTMENT_TYPES.find(t => t.id === typeId);
+          if (type.variants && variant) {
+            const varCode = variant === 'Zirconia' ? 'Z' : 'B';
+            refCode = `${type.refPrefix}${varCode}001`;
+            productName = `${type.nameKo} (${variant})`;
+          } else {
+            refCode = type.refCode;
+            productName = type.nameKo;
+          }
+          price = type.price;
+        }
+      } else if (selectedCategory === 'analog') {
+        const typeId = currentSelection.analogType;
+        if (typeId) {
+          const type = ANALOG_TYPES.find(t => t.id === typeId);
+          refCode = type.refCode;
+          price = type.price;
+          productName = type.nameKo;
+        }
+      } else if (selectedCategory === 'impressionCoping') {
+        const typeId = currentSelection.icType;
+        const variant = document.getElementById('ic-variant-select')?.value;
+        if (typeId && variant) {
+          const type = IMPRESSION_COPING_TYPES.find(t => t.id === typeId);
+          const varCode = variant === 'Zirconia' ? 'Z' : 'B';
+          refCode = `${type.refPrefix}${varCode}001`;
+          price = type.price;
+          productName = `Impression Coping ${type.nameKo} (${variant})`;
+        }
+      } else if (selectedCategory === 'scan') {
+        const typeId = currentSelection.scanType;
+        if (typeId) {
+          const type = SCAN_TYPES.find(t => t.id === typeId);
+          refCode = type.refCode;
+          price = type.price;
+          productName = type.nameKo;
+        }
+      } else if (selectedCategory === 'digital') {
+        const typeId = currentSelection.digitalType;
+        if (typeId) {
+          const type = DIGITAL_TYPES.find(t => t.id === typeId);
+          refCode = type.refCode;
+          price = type.price;
+          productName = type.nameKo;
+        }
+      }
+      
+      // UI 업데이트
+      if (price > 0) {
+        const discount = selectedContract ? selectedContract.discount : 0;
+        const discountedPrice = price * (1 - discount / 100);
+        
+        document.getElementById('product-ref').textContent = refCode;
+        document.getElementById('product-srp').textContent = `₱${price.toLocaleString()}`;
+        document.getElementById('product-discount').innerHTML = discount > 0 
+          ? `₱${discountedPrice.toLocaleString()} <span class="text-sm text-red-600">(${discount}% 할인)</span>`
+          : `₱${price.toLocaleString()}`;
+        
+        currentSelection.refCode = refCode;
+        currentSelection.price = price;
+        currentSelection.discountedPrice = discountedPrice;
+        currentSelection.productName = productName;
+      }
+    }
+
+    function decreaseQuantity() {
+      const input = document.getElementById('product-quantity');
+      const value = parseInt(input.value);
+      if (value > 1) input.value = value - 1;
+    }
+
+    function increaseQuantity() {
+      const input = document.getElementById('product-quantity');
+      input.value = parseInt(input.value) + 1;
+    }
+
+    // =========================================================================
+    // 장바구니 담기
+    // =========================================================================
+    function addProductToCart() {
+      if (!currentSelection.refCode) {
+        alert('모든 옵션을 선택하세요');
+        return;
+      }
+      
+      const quantity = parseInt(document.getElementById('product-quantity').value);
+      const newItem = {
+        id: Date.now(),
+        system: selectedSystem,
+        category: selectedCategory,
+        name: currentSelection.productName,
+        refCode: currentSelection.refCode,
+        quantity: quantity,
+        srpPrice: currentSelection.price,
+        unitPrice: currentSelection.discountedPrice,
+        total: currentSelection.discountedPrice * quantity
+      };
+      
+      cart.push(newItem);
+      customerCarts[selectedCustomer.id] = cart; // 고객별 장바구니에 저장
+      
+      updateCartDisplay();
+      document.getElementById('product-quantity').value = 1;
+      alert('✅ 장바구니에 담았습니다!');
+    }
+
+    function updateCartDisplay() {
+      if (cart.length === 0) {
+        document.getElementById('cart-summary').style.display = 'none';
+        document.getElementById('cart-count').textContent = '0';
+        return;
+      }
+      
+      document.getElementById('cart-summary').style.display = 'block';
+      const html = cart.map((item, idx) => `
+        <div class="flex justify-between items-center text-sm">
           <div class="flex-1">
-            <p class="text-sm font-semibold text-gray-900">${p.name}</p>
-            <p class="text-xs text-gray-500">${p.code} · ${p.size}</p>
-            <p class="text-sm font-bold text-blue-600 mt-1">₱${p.dealer.toLocaleString()} <span class="text-xs font-normal text-gray-400">dealer</span></p>
+            <p class="font-medium">${item.name}</p>
+            <p class="text-xs text-gray-500">${item.refCode} | ₱${item.unitPrice.toLocaleString()} × ${item.quantity}</p>
           </div>
-          <div class="flex items-center gap-2 ml-3">
-            <button onclick="changeQty('${p.code}', -1, '${currentCategory}')" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full text-lg font-bold text-gray-600 flex items-center justify-center">−</button>
-            <span class="w-8 text-center font-bold text-gray-900" id="qty-${p.code}">${qty}</span>
-            <button onclick="changeQty('${p.code}', 1, '${currentCategory}')" class="w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full text-lg font-bold text-white flex items-center justify-center">+</button>
+          <button onclick="removeFromCart(${idx})" class="text-red-600 hover:text-red-700 ml-2">✕</button>
+        </div>
+      `).join('');
+      
+      const total = cart.reduce((sum, item) => sum + item.total, 0);
+      document.getElementById('cart-items').innerHTML = html;
+      document.getElementById('cart-total').textContent = `₱${total.toLocaleString()}`;
+      document.getElementById('cart-count').textContent = cart.length;
+      
+      // 장바구니 패널도 업데이트 (패널이 열려있을 때)
+      if (document.getElementById('cart-panel') && !document.getElementById('cart-panel').classList.contains('translate-x-full')) {
+        updateCartPanel();
+      }
+    }
+
+    function removeFromCart(idx) {
+      cart.splice(idx, 1);
+      if (selectedCustomer) {
+        customerCarts[selectedCustomer.id] = cart; // 고객별 장바구니 업데이트
+      }
+      updateCartDisplay();
+    }
+
+    // =========================================================================
+    // Step 4: 출고지 선택
+    // =========================================================================
+    function loadDeliveryOptions() {
+      const html = `
+        <button onclick="selectDelivery('clinic1')" class="w-full bg-white border-2 border-gray-300 rounded-lg p-4 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">클리닉 1</p>
+              <p class="text-sm text-gray-600">${selectedCustomer.address}</p>
+              <p class="text-sm text-gray-500">${selectedCustomer.phone}</p>
+            </div>
+          </div>
+        </button>
+        <button onclick="selectDelivery('clinic2')" class="w-full bg-white border-2 border-gray-300 rounded-lg p-4 text-left hover:border-blue-500 hover:bg-blue-50 transition">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">클리닉 2</p>
+              <p class="text-sm text-gray-600">${selectedCustomer.address}</p>
+              <p class="text-sm text-gray-500">${selectedCustomer.phone}</p>
+            </div>
+          </div>
+        </button>
+        <button onclick="selectDelivery('office')" class="w-full bg-white border-2 border-orange-300 rounded-lg p-4 text-left hover:border-orange-500 hover:bg-orange-50 transition">
+          <div class="flex items-start gap-3">
+            <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-semibold text-gray-900">오피스 출고</p>
+              <p class="text-sm text-gray-600">Manila Office - Makati City</p>
+              <p class="text-sm text-gray-500">직접 수령 가능</p>
+              <span class="inline-block mt-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded">배송비 무료</span>
+            </div>
+          </div>
+        </button>
+      `;
+      document.getElementById('delivery-options').innerHTML = html;
+    }
+
+    function selectDelivery(type) {
+      selectedDelivery = { type, address: selectedCustomer.address, phone: selectedCustomer.phone };
+      nextStep();
+    }
+
+    // =========================================================================
+    // Step 5: 주문 요약
+    // =========================================================================
+    function loadOrderSummary() {
+      const total = cart.reduce((sum, item) => sum + item.total, 0);
+      const srpTotal = cart.reduce((sum, item) => sum + (item.srpPrice * item.quantity), 0);
+      const discount = srpTotal - total;
+      
+      // 주문 후 잔액 계산
+      let balanceSection = '';
+      if (selectedContract) {
+        const beforeBalance = selectedContract.balance;
+        const afterBalance = beforeBalance - total;
+        const contractAmount = selectedContract.contractAmount;
+        const balancePercent = (afterBalance / contractAmount) * 100;
+        
+        let balanceColor = 'text-green-600';
+        let balanceWarning = '';
+        
+        if (balancePercent < 10) {
+          balanceColor = 'text-red-600';
+          balanceWarning = '<span class="ml-2 text-xs px-2 py-1 bg-red-100 text-red-700 rounded">⚠️ 재계약 필요</span>';
+        } else if (balancePercent < 30) {
+          balanceColor = 'text-yellow-600';
+          balanceWarning = '<span class="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">⚠️ 재계약 권고</span>';
+        }
+        
+        balanceSection = `
+          <div class="bg-white border rounded-lg p-4">
+            <h3 class="font-semibold mb-3">계약 잔액</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">주문 전 잔액</span>
+                <span class="font-semibold text-gray-900">₱${beforeBalance.toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">주문 금액</span>
+                <span class="font-semibold text-orange-600">₱${total.toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between pt-2 border-t">
+                <span class="font-bold">주문 후 잔액</span>
+                <span class="text-xl font-bold ${balanceColor}">₱${afterBalance.toLocaleString()}${balanceWarning}</span>
+              </div>
+              <div class="mt-2">
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="h-full ${balancePercent < 10 ? 'bg-red-500' : balancePercent < 30 ? 'bg-yellow-500' : 'bg-green-500'}" style="width: ${Math.max(0, balancePercent)}%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1 text-right">계약액의 ${balancePercent.toFixed(1)}% 잔액</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      const html = `
+        <div class="space-y-4">
+          <div class="bg-white border rounded-lg p-4">
+            <h3 class="font-semibold mb-2">고객 정보</h3>
+            <p>${selectedCustomer.name} (${selectedCustomer.code})</p>
+            <p class="text-sm text-gray-600">${selectedCustomer.phone}</p>
+          </div>
+          <div class="bg-white border rounded-lg p-4">
+            <h3 class="font-semibold mb-2">계약</h3>
+            <p>${selectedContract ? selectedContract.name + ' (' + selectedContract.discount + '% 할인)' : 'SRP 정상가'}</p>
+          </div>
+          ${balanceSection}
+          <div class="bg-white border rounded-lg p-4">
+            <h3 class="font-semibold mb-3">주문 제품</h3>
+            ${cart.map(item => `
+              <div class="flex justify-between py-2 border-b last:border-0">
+                <div>
+                  <p class="font-medium">${item.name}</p>
+                  <p class="text-sm text-gray-600">${item.refCode} | ₱${item.unitPrice.toLocaleString()} × ${item.quantity}</p>
+                </div>
+                <p class="font-semibold">₱${item.total.toLocaleString()}</p>
+              </div>
+            `).join('')}
+          </div>
+          <div class="bg-white border rounded-lg p-4">
+            <div class="space-y-2">
+              ${discount > 0 ? `
+                <div class="flex justify-between text-sm"><span>상품 총액</span><span>₱${srpTotal.toLocaleString()}</span></div>
+                <div class="flex justify-between text-sm text-red-600"><span>할인</span><span>-₱${discount.toLocaleString()}</span></div>
+              ` : ''}
+              <div class="flex justify-between pt-2 border-t">
+                <span class="font-bold">최종 금액</span>
+                <span class="text-2xl font-bold text-blue-600">₱${total.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>`;
-  }).join('');
-}
+      `;
+      document.getElementById('order-summary').innerHTML = html;
+    }
 
-function changeQty(code, delta, cat) {
-  const product = PRODUCTS[cat].find(p => p.code === code);
-  if (!state.cart[code]) state.cart[code] = { ...product, qty: 0 };
-  state.cart[code].qty = Math.max(0, state.cart[code].qty + delta);
-  if (state.cart[code].qty === 0) delete state.cart[code];
-  const el = document.getElementById('qty-' + code);
-  if (el) el.textContent = (state.cart[code] || {}).qty || 0;
-  updateCartSummary();
-}
-
-function updateCartSummary() {
-  const items = Object.values(state.cart);
-  const el = document.getElementById('cart-summary');
-  if (items.length === 0) { el.classList.add('hidden'); return; }
-  el.classList.remove('hidden');
-  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
-  const count = items.reduce((s, i) => s + i.qty, 0);
-  document.getElementById('cart-count').textContent = count + ' items';
-  document.getElementById('cart-items').innerHTML = items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>₱${(i.dealer*i.qty).toLocaleString()}</span></div>`).join('');
-  document.getElementById('cart-total').textContent = '₱' + total.toLocaleString();
-}
-
-// ── STEP 4: DELIVERY ──────────────────────────────────────────────────────────
-function selectDelivery(type) {
-  state.delivery = type;
-  document.getElementById('delivery-courier-card').classList.toggle('border-blue-500', type === 'courier');
-  document.getElementById('delivery-courier-card').classList.toggle('bg-blue-50', type === 'courier');
-  document.getElementById('delivery-office-card').classList.toggle('border-blue-500', type === 'office');
-  document.getElementById('delivery-office-card').classList.toggle('bg-blue-50', type === 'office');
-  document.getElementById('delivery-address-block').classList.toggle('hidden', type !== 'courier');
-}
-
-// ── STEP 5: REVIEW ────────────────────────────────────────────────────────────
-function renderReview() {
-  const c = state.customer;
-  const items = Object.values(state.cart);
-  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
-  const newBalance = c.balance - total;
-  const pctAfter = (newBalance / c.contract) * 100;
-
-  let balanceWarning = '';
-  if (newBalance < 0) {
-    balanceWarning = `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">⛔ Order amount exceeds contract balance by ₱${Math.abs(newBalance).toLocaleString()}. Order may be rejected.</div>`;
-  } else if (pctAfter <= 10) {
-    balanceWarning = `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">⚠️ After this order, balance drops to ${pctAfter.toFixed(1)}%. Re-contract urgently needed.</div>`;
-  } else if (pctAfter <= 30) {
-    balanceWarning = `<div class="bg-orange-50 border border-orange-200 rounded-xl p-3 text-orange-700 text-sm">⚡ After this order, balance drops to ${pctAfter.toFixed(1)}%. Please initiate re-contract.</div>`;
-  }
-
-  document.getElementById('order-review').innerHTML = `
-    <div class="bg-white rounded-xl p-4 border">
-      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Customer</p>
-      <p class="font-semibold text-gray-900">${c.clinic}</p>
-      <p class="text-sm text-gray-600">${c.doctor}</p>
-    </div>
-    <div class="bg-white rounded-xl p-4 border">
-      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Products (${items.length} items)</p>
-      <div class="space-y-1">
-        ${items.map(i => `<div class="flex justify-between text-sm"><span class="text-gray-700">${i.name} x${i.qty}</span><span class="font-medium">₱${(i.dealer*i.qty).toLocaleString()}</span></div>`).join('')}
-        <div class="flex justify-between pt-2 border-t font-bold"><span>Total</span><span class="text-blue-600">₱${total.toLocaleString()}</span></div>
-      </div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border">
-      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Delivery</p>
-      <p class="text-sm text-gray-800">${state.delivery === 'courier' ? '🚚 Courier Delivery' : '🏢 Office Pick-up'}</p>
-      ${state.delivery === 'courier' ? `<p class="text-xs text-gray-500 mt-1">${document.getElementById('delivery-address').value || 'No address entered'}</p>` : ''}
-    </div>
-    <div class="bg-white rounded-xl p-4 border">
-      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Balance After Order</p>
-      <div class="flex justify-between">
-        <span class="text-sm text-gray-600">Current Balance</span>
-        <span class="font-medium">₱${c.balance.toLocaleString()}</span>
-      </div>
-      <div class="flex justify-between">
-        <span class="text-sm text-gray-600">Order Amount</span>
-        <span class="font-medium text-red-500">−₱${total.toLocaleString()}</span>
-      </div>
-      <div class="flex justify-between pt-2 border-t">
-        <span class="text-sm font-semibold">Remaining</span>
-        <span class="font-bold ${newBalance < 0 ? 'text-red-600' : 'text-green-600'}">₱${newBalance.toLocaleString()}</span>
-      </div>
-    </div>
-    ${balanceWarning}
-  `;
-}
-
-// ── SUBMIT ────────────────────────────────────────────────────────────────────
-function submitOrder() {
-  const c = state.customer;
-  const items = Object.values(state.cart);
-  if (items.length === 0) { alert('Please add products to cart.'); return; }
-  if (!state.delivery) { alert('Please select delivery method.'); return; }
-
-  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
-  const orderNo = 'MG-' + Date.now().toString().slice(-6);
-  const order = {
-    id: orderNo,
-    customerId: c.id,
-    customerName: c.clinic,
-    doctor: c.doctor,
-    items: items,
-    total: total,
-    delivery: state.delivery,
-    address: document.getElementById('delivery-address').value,
-    notes: document.getElementById('special-notes').value,
-    status: '접수중',
-    date: new Date().toISOString(),
-  };
-  orders.unshift(order);
-  saveOrders();
-
-  // Deduct balance
-  const idx = customers.findIndex(cu => cu.id === c.id);
-  customers[idx].balance -= total;
-  saveCustomers();
-
-  document.getElementById('success-order-no').textContent = 'Order #' + orderNo;
-  document.getElementById('success-modal').classList.remove('hidden');
-}
-
-function resetOrder() {
-  state = { customer: null, cart: {}, delivery: null };
-  document.getElementById('success-modal').classList.add('hidden');
-  gotoStep(1);
-  renderCustomerList(customers);
-}
-
-// ── ORDER HISTORY ─────────────────────────────────────────────────────────────
-function showOrderHistory() {
-  const modal = document.getElementById('history-modal');
-  modal.classList.remove('hidden');
-  const statusColors = { '접수중': 'bg-blue-100 text-blue-700', '처리중': 'bg-yellow-100 text-yellow-700', '출고완료': 'bg-green-100 text-green-700', '접수반려': 'bg-red-100 text-red-700' };
-  document.getElementById('history-content').innerHTML = orders.length === 0
-    ? '<p class="text-center text-gray-400 py-8">No orders yet</p>'
-    : orders.map(o => `
-      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-3">
-        <div class="flex items-center justify-between mb-2">
-          <div>
-            <p class="font-semibold text-gray-900 text-sm">${o.customerName}</p>
-            <p class="text-xs text-gray-400">${o.id} · ${new Date(o.date).toLocaleDateString()}</p>
+    // =========================================================================
+    // Step 6: 주문 완료
+    // =========================================================================
+    function completeOrder() {
+      const total = cart.reduce((sum, item) => sum + item.total, 0);
+      
+      // 주문 데이터 생성
+      const order = {
+        id: 'ORD' + String(orderIdCounter++).padStart(5, '0'),
+        customer: {
+          id: selectedCustomer.id,
+          name: selectedCustomer.name,
+          code: selectedCustomer.code
+        },
+        contract: selectedContract ? {
+          id: selectedContract.id,
+          name: selectedContract.name,
+          discount: selectedContract.discount
+        } : null,
+        items: [...cart],
+        delivery: selectedDelivery,
+        total: total,
+        status: '접수중',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      orders.push(order);
+      
+      // 계약 잔액 업데이트
+      if (selectedContract) {
+        selectedContract.usedAmount += total;
+        selectedContract.balance -= total;
+      }
+      
+      // 해당 고객의 장바구니 비우기
+      cart.splice(0, cart.length);
+      customerCarts[selectedCustomer.id] = cart;
+      
+      console.log('주문 완료:', order);
+    }
+    
+    // 주문 내역 표시
+    function showOrderHistory() {
+      const modal = document.getElementById('order-history-modal');
+      const panel = document.getElementById('order-history-panel');
+      
+      modal.style.display = 'block';
+      setTimeout(() => {
+        panel.classList.remove('translate-x-full');
+      }, 10);
+      
+      renderOrderHistory();
+    }
+    
+    function closeOrderHistory(event) {
+      if (event && event.target.id !== 'order-history-modal') return;
+      
+      const panel = document.getElementById('order-history-panel');
+      panel.classList.add('translate-x-full');
+      
+      setTimeout(() => {
+        document.getElementById('order-history-modal').style.display = 'none';
+      }, 300);
+    }
+    
+    function renderOrderHistory() {
+      if (orders.length === 0) {
+        document.getElementById('order-history-list').innerHTML = `
+          <div class="text-center py-12 text-gray-500">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            <p>주문 내역이 없습니다</p>
           </div>
-          <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColors[o.status] || 'bg-gray-100 text-gray-600'}">${o.status}</span>
-        </div>
-        <div class="text-sm text-gray-600">${o.items.length} products · <span class="font-semibold text-blue-600">₱${o.total.toLocaleString()}</span></div>
-        <div class="text-xs text-gray-400 mt-1">${o.delivery === 'courier' ? '🚚 Courier' : '🏢 Office Pick-up'}</div>
-      </div>`).join('');
-}
+        `;
+        return;
+      }
+      
+      const html = orders.slice().reverse().map(order => {
+        const statusColors = {
+          '접수중': 'bg-blue-100 text-blue-700',
+          '처리중': 'bg-yellow-100 text-yellow-700',
+          '출고완료': 'bg-green-100 text-green-700',
+          '접수반려': 'bg-red-100 text-red-700'
+        };
+        
+        const date = new Date(order.createdAt);
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        
+        return `
+          <div class="bg-white border rounded-lg p-4 mb-3">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <p class="font-bold text-lg text-gray-900">${order.id}</p>
+                <p class="text-sm text-gray-600">${dateStr}</p>
+              </div>
+              <div class="flex gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColors[order.status]}">${order.status}</span>
+                <select onchange="updateOrderStatus('${order.id}', this.value)" class="px-3 py-1 border rounded text-xs">
+                  <option value="접수중" ${order.status === '접수중' ? 'selected' : ''}>접수중</option>
+                  <option value="처리중" ${order.status === '처리중' ? 'selected' : ''}>처리중</option>
+                  <option value="출고완료" ${order.status === '출고완료' ? 'selected' : ''}>출고완료</option>
+                  <option value="접수반려" ${order.status === '접수반려' ? 'selected' : ''}>접수반려</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="border-t pt-3">
+              <p class="text-sm font-semibold text-gray-900">${order.customer.name} (${order.customer.code})</p>
+              <p class="text-sm text-gray-600">${order.items.length}개 제품 • ₱${order.total.toLocaleString()}</p>
+              ${order.contract ? `<p class="text-xs text-blue-600 mt-1">${order.contract.name} (${order.contract.discount}% 할인)</p>` : ''}
+            </div>
+            
+            <button onclick="toggleOrderDetails('${order.id}')" class="mt-3 text-sm text-blue-600 hover:text-blue-700 font-semibold">
+              상세 보기 ▼
+            </button>
+            
+            <div id="order-details-${order.id}" class="mt-3 border-t pt-3" style="display:none;">
+              ${order.items.map(item => `
+                <div class="flex justify-between text-sm py-1">
+                  <span>${item.name} (${item.refCode})</span>
+                  <span class="font-semibold">₱${item.total.toLocaleString()}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('order-history-list').innerHTML = html;
+    }
+    
+    function toggleOrderDetails(orderId) {
+      const detailsEl = document.getElementById(`order-details-${orderId}`);
+      detailsEl.style.display = detailsEl.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function updateOrderStatus(orderId, newStatus) {
+      const order = orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = newStatus;
+        order.updatedAt = new Date().toISOString();
+        renderOrderHistory();
+      }
+    }
 
-function closeHistory() { document.getElementById('history-modal').classList.add('hidden'); }
+    function newOrder() {
+      selectedCustomer = null;
+      selectedContract = null;
+      selectedSystem = null;
+      selectedCategory = null;
+      currentSelection = {};
+      selectedDelivery = null;
+      cart = []; // 빈 배열로 재설정 (새 고객 선택 시 로드됨)
+      currentStep = 1;
+      document.getElementById('customer-search').value = '';
+      document.getElementById('customer-info').style.display = 'none';
+      updateStepUI();
+      searchCustomers();
+    }
 
-// ── NEW CUSTOMER ──────────────────────────────────────────────────────────────
-function showAddCustomer() { document.getElementById('add-customer-modal').classList.remove('hidden'); }
-function closeAddCustomer() { document.getElementById('add-customer-modal').classList.add('hidden'); }
+    // =========================================================================
+    // 신규 고객 등록
+    // =========================================================================
+    
+    // 필리핀 우편번호 데이터 (실제 PHLPost 기준)
+    const PHILIPPINES_ZIPCODES = {
+      // MANILA CITY (1000-1018)
+      '1000': 'Manila - Ermita (CPO)',
+      '1001': 'Manila - Quiapo',
+      '1002': 'Manila - Intramuros',
+      '1003': 'Manila - Santa Cruz (South)',
+      '1004': 'Manila - Malate',
+      '1005': 'Manila - San Miguel',
+      '1006': 'Manila - Binondo',
+      '1007': 'Manila - Paco',
+      '1008': 'Manila - Sampaloc (East)',
+      '1009': 'Manila - Santa Ana',
+      '1010': 'Manila - San Nicolas',
+      '1011': 'Manila - Pandacan',
+      '1012': 'Manila - Tondo (South)',
+      '1013': 'Manila - Tondo (North)',
+      '1014': 'Manila - Santa Cruz (North)',
+      '1015': 'Manila - Sampaloc (West)',
+      '1016': 'Manila - Santa Mesa',
+      '1017': 'Manila - San Andres Bukid',
+      '1018': 'Manila - Port Area (South)',
+      
+      // MAKATI CITY (1200-1233)
+      '1200': 'Makati - Poblacion',
+      '1201': 'Makati - Santa Cruz',
+      '1202': 'Makati - San Lorenzo',
+      '1203': 'Makati - Singkamas',
+      '1204': 'Makati - Tejeros',
+      '1205': 'Makati - Pio del Pilar',
+      '1206': 'Makati - Urdaneta',
+      '1207': 'Makati - Magallanes',
+      '1208': 'Makati - Olympia',
+      '1209': 'Makati - Bel-Air',
+      '1210': 'Makati - La Paz',
+      '1211': 'Makati - San Antonio',
+      '1212': 'Makati - Guadalupe Nuevo',
+      '1213': 'Makati - Guadalupe Viejo',
+      '1214': 'Makati - CEMBO',
+      '1215': 'Makati - South CEMBO',
+      '1216': 'Makati - West REMBO',
+      '1217': 'Makati - COMEMBO',
+      '1218': 'Makati - PEMBO',
+      '1219': 'Makati - Forbes Park North',
+      '1220': 'Makati - Forbes Park South',
+      '1221': 'Makati - Dasmarinas Village North',
+      '1222': 'Makati - Dasmarinas Village South',
+      '1223': 'Makati - San Isidro',
+      '1224': 'Makati - Carmona',
+      '1225': 'Makati - Kasilawan',
+      '1226': 'Makati - Ayala-Paseo de Roxas',
+      '1227': 'Makati - Valenzuela',
+      '1228': 'Makati - Palanan',
+      '1229': 'Makati - Pinagkaisahan',
+      '1230': 'Makati - Rizal',
+      '1231': 'Makati - Pitogo',
+      '1232': 'Makati - East REMBO',
+      '1233': 'Makati - Bangkal',
+      
+      // QUEZON CITY (1100-1138)
+      '1100': 'Quezon City - CPO',
+      '1101': 'Quezon City - Alicia',
+      '1102': 'Quezon City - Amihan',
+      '1103': 'Quezon City - Baesa',
+      '1104': 'Quezon City - Bagong Bayan',
+      '1105': 'Quezon City - Bagong Pag-asa',
+      '1106': 'Quezon City - Bahay Toro',
+      '1107': 'Quezon City - Balong Bato',
+      '1108': 'Quezon City - Batasan Hills',
+      '1109': 'Quezon City - Central',
+      '1110': 'Quezon City - Quirino District',
+      '1111': 'Quezon City - Project 4',
+      '1112': 'Quezon City - Bagumbayan',
+      '1113': 'Quezon City - Damayan',
+      '1114': 'Quezon City - East Kamias',
+      '1115': 'Quezon City - Kamuning',
+      '1116': 'Quezon City - Kristong Hari',
+      '1117': 'Quezon City - Krus na Ligas',
+      '1118': 'Quezon City - Laging Handa',
+      '1119': 'Quezon City - Libis',
+      '1120': 'Quezon City - Loyola Heights',
+      '1121': 'Quezon City - Maharlika',
+      '1122': 'Quezon City - Malaya',
+      '1123': 'Quezon City - Mangga',
+      '1124': 'Quezon City - Masagana',
+      '1125': 'Quezon City - Milagrosa',
+      '1126': 'Quezon City - Mariana',
+      '1127': 'Quezon City - Nayong Kanluran',
+      '1128': 'Quezon City - New Era',
+      '1129': 'Quezon City - Obrero',
+      '1130': 'Quezon City - Old Capitol Site',
+      '1131': 'Quezon City - Pag-ibig sa Nayon',
+      '1132': 'Quezon City - Paltok',
+      '1133': 'Quezon City - Pinyahan',
+      '1134': 'Quezon City - Project 8',
+      '1135': 'Quezon City - Phil-Am',
+      '1136': 'Quezon City - Santa Monica',
+      '1137': 'Quezon City - Santo Cristo',
+      '1138': 'Quezon City - UP Campus',
+      
+      // PASIG CITY (1600-1612)
+      '1600': 'Pasig City - CPO',
+      '1601': 'Pasig - San Joaquin',
+      '1602': 'Pasig - Pinagbuhatan',
+      '1603': 'Pasig - Kapitolyo',
+      '1604': 'Pasig - Ugong',
+      '1605': 'Pasig - Ortigas Center',
+      '1606': 'Pasig - Caniogan',
+      '1607': 'Pasig - Maybunga',
+      '1608': 'Pasig - Sta. Lucia',
+      '1609': 'Pasig - Rosario',
+      '1610': 'Pasig - Santolan',
+      '1611': 'Pasig - Manggahan',
+      '1612': 'Pasig - Green Park',
+      
+      // TAGUIG CITY (1630-1638)
+      '1630': 'Taguig - Western Bicutan',
+      '1631': 'Taguig - Bicutan',
+      '1632': 'Taguig - Lower Bicutan',
+      '1633': 'Taguig - Upper Bicutan',
+      '1634': 'Taguig - Nichols-McKinley',
+      '1635': 'Taguig - Fort Bonifacio',
+      '1636': 'Taguig - Bay Breeze Village',
+      '1637': 'Taguig - Tukukan',
+      '1638': 'Taguig - Ligid',
+      
+      // CALOOCAN CITY (1400-1409)
+      '1400': 'Caloocan - CPO',
+      '1401': 'Caloocan - Bagong Barrio',
+      '1402': 'Caloocan - Sta. Quiteria',
+      '1403': 'Caloocan - Grace Village',
+      '1404': 'Caloocan - San Jose',
+      '1405': 'Caloocan - Bagong Silang',
+      '1406': 'Caloocan - Kaybiga',
+      '1407': 'Caloocan - University Hills',
+      '1409': 'Caloocan - Kaunlaran Village',
+      
+      // LAS PINAS CITY (1740-1752)
+      '1740': 'Las Pinas - CPO',
+      '1741': 'Las Pinas - Remarville Subdivision',
+      '1742': 'Las Pinas - Pulang Lupa & Zapote',
+      '1743': 'Las Pinas - Cut-cut',
+      '1744': 'Las Pinas - Manuyo',
+      '1745': 'Las Pinas - Gatchalian Subdivision',
+      '1746': 'Las Pinas - Verdant Acres Subdivision',
+      '1747': 'Las Pinas - Talon Moonwalk',
+      '1748': 'Las Pinas - Manila Doctors Village',
+      '1749': 'Las Pinas - Angela Village',
+      '1750': 'Las Pinas - Almanza',
+      '1751': 'Las Pinas - T.S. Cruz Subdivision',
+      '1752': 'Las Pinas - Soldiers Hills Subdivision',
+      
+      // MALABON CITY (1470-1480)
+      '1470': 'Malabon - CPO',
+      '1471': 'Malabon - Flores',
+      '1472': 'Malabon - Longos',
+      '1473': 'Malabon - Tonsuya',
+      '1474': 'Malabon - Acacia',
+      '1475': 'Malabon - Potrero',
+      '1476': 'Malabon - Araneta Subdivision',
+      '1477': 'Malabon - Maysilo',
+      '1478': 'Malabon - Santolan',
+      '1479': 'Malabon - Muzon',
+      '1480': 'Malabon - Dampalit',
+      
+      // MARIKINA CITY (1800-1811)
+      '1800': 'Marikina - CPO',
+      '1801': 'Marikina - Concepcion Uno',
+      '1802': 'Marikina - Industrial Valley',
+      '1803': 'Marikina - Kalumpang',
+      '1804': 'Marikina - Malanday',
+      '1805': 'Marikina - Nangka',
+      '1806': 'Marikina - Parang',
+      '1807': 'Marikina - San Roque',
+      '1808': 'Marikina - Santa Elena',
+      '1809': 'Marikina - Santo Nino',
+      '1810': 'Marikina - Tumana',
+      '1811': 'Marikina - Jesus de la Pena',
+      
+      // MUNTINLUPA CITY (1770-1781)
+      '1770': 'Muntinlupa - CPO',
+      '1771': 'Muntinlupa - Tunasan',
+      '1772': 'Muntinlupa - Poblacion',
+      '1773': 'Muntinlupa - Putatan',
+      '1774': 'Muntinlupa - Cupang',
+      '1775': 'Muntinlupa - Buli',
+      '1776': 'Muntinlupa - Alabang',
+      '1777': 'Muntinlupa - Sucat',
+      '1778': 'Muntinlupa - Ayala Alabang',
+      '1780': 'Muntinlupa - New Bilibid Prison',
+      '1781': 'Muntinlupa - Bayanan',
+      
+      // PARANAQUE CITY (1700-1720)
+      '1700': 'Paranaque - CPO',
+      '1701': 'Paranaque - Baclaran',
+      '1702': 'Paranaque - La Huerta',
+      '1703': 'Paranaque - San Dionisio',
+      '1704': 'Paranaque - Santo Nino',
+      '1705': 'Paranaque - Tambo',
+      '1706': 'Paranaque - BF Homes',
+      '1707': 'Paranaque - Don Galo',
+      '1708': 'Paranaque - Marcelo Green',
+      '1709': 'Paranaque - Merville',
+      '1710': 'Paranaque - Moonwalk',
+      '1711': 'Paranaque - San Antonio',
+      '1712': 'Paranaque - San Isidro',
+      '1713': 'Paranaque - San Martin de Porres',
+      '1714': 'Paranaque - Sun Valley',
+      '1715': 'Paranaque - Vitalez',
+      '1716': 'Paranaque - Don Bosco',
+      '1717': 'Paranaque - La Huerta Business Park',
+      '1718': 'Paranaque - Airport Village',
+      '1720': 'Paranaque - Manila Bay Reclamation',
+      
+      // PASAY CITY (1300-1311)
+      '1300': 'Pasay - CPO',
+      '1301': 'Pasay - Edsa',
+      '1302': 'Pasay - San Rafael',
+      '1303': 'Pasay - F.B. Harrison',
+      '1304': 'Pasay - San Isidro',
+      '1305': 'Pasay - Tramo',
+      '1306': 'Pasay - San Roque',
+      '1307': 'Pasay - Malibay',
+      '1308': 'Pasay - Domestic Airport',
+      '1309': 'Pasay - NAIA Complex',
+      '1310': 'Pasay - Newport City',
+      '1311': 'Pasay - Villamor Airbase',
+      
+      // PATEROS (1620-1621)
+      '1620': 'Pateros - Aguho',
+      '1621': 'Pateros - Sta. Ana',
+      
+      // SAN JUAN (1500-1504)
+      '1500': 'San Juan - CPO',
+      '1501': 'San Juan - Addition Hills',
+      '1502': 'San Juan - Greenhills (PO)',
+      '1503': 'San Juan - Greenhills North',
+      '1504': 'San Juan - Eisenhower-Crame',
+      
+      // VALENZUELA CITY (1440-1464)
+      '1440': 'Valenzuela - CPO',
+      '1441': 'Valenzuela - Arkong Bato',
+      '1442': 'Valenzuela - Bagbaguin',
+      '1443': 'Valenzuela - Balangkas',
+      '1444': 'Valenzuela - Bignay',
+      '1445': 'Valenzuela - Bisig',
+      '1446': 'Valenzuela - Canumay',
+      '1447': 'Valenzuela - Coloong',
+      '1448': 'Valenzuela - Dalandanan',
+      '1449': 'Valenzuela - Gen. T. de Leon',
+      '1450': 'Valenzuela - Isla',
+      '1451': 'Valenzuela - Karuhatan',
+      '1452': 'Valenzuela - Lawang Bato',
+      '1453': 'Valenzuela - Lingunan',
+      '1454': 'Valenzuela - Mabolo',
+      '1455': 'Valenzuela - Malanday',
+      '1456': 'Valenzuela - Malinta',
+      '1457': 'Valenzuela - Marulas',
+      '1458': 'Valenzuela - Maysan',
+      '1459': 'Valenzuela - Palasan',
+      '1460': 'Valenzuela - Parada',
+      '1461': 'Valenzuela - Pariancillo Villa',
+      '1462': 'Valenzuela - Pasolo',
+      '1463': 'Valenzuela - Poblacion',
+      '1464': 'Valenzuela - Polo',
+      
+      // CAVITE PROVINCE (4000-4126)
+      '4000': 'Cavite - Bacoor',
+      '4100': 'Cavite City',
+      '4101': 'Cavite - Noveleta',
+      '4102': 'Cavite - Kawit',
+      '4103': 'Cavite - Imus',
+      '4104': 'Cavite - Rosario',
+      '4105': 'Cavite - Tanza',
+      '4106': 'Cavite - Naic',
+      '4107': 'Cavite - Ternate',
+      '4108': 'Cavite - Maragondon',
+      '4109': 'Cavite - Alfonso',
+      '4110': 'Cavite - Amadeo',
+      '4111': 'Cavite - Indang',
+      '4112': 'Cavite - Gen. Trias',
+      '4113': 'Cavite - Trece Martires City',
+      '4114': 'Cavite - Dasmarinas (North)',
+      '4115': 'Cavite - Dasmarinas (South)',
+      '4116': 'Cavite - Silang',
+      '4117': 'Cavite - Carmona',
+      '4118': 'Cavite - Gen. Mariano Alvarez',
+      '4119': 'Cavite - Mendez',
+      '4120': 'Cavite - Tagaytay City',
+      '4121': 'Cavite - Magallanes',
+      '4122': 'Cavite - Alfonso',
+      '4123': 'Cavite - Gen. Emilio Aguinaldo',
+      
+      // LAGUNA PROVINCE (4000-4032)
+      '4000': 'Laguna - Calamba City',
+      '4001': 'Laguna - Cabuyao',
+      '4002': 'Laguna - Binan',
+      '4003': 'Laguna - San Pedro',
+      '4004': 'Laguna - Sta. Rosa',
+      '4005': 'Laguna - San Pablo City',
+      '4009': 'Laguna - Bay',
+      '4010': 'Laguna - Calauan',
+      '4011': 'Laguna - Alaminos',
+      '4012': 'Laguna - Los Banos',
+      '4020': 'Laguna - Nagcarlan',
+      '4021': 'Laguna - Liliw',
+      '4022': 'Laguna - Magdalena',
+      '4023': 'Laguna - Majayjay',
+      '4024': 'Laguna - Luisiana',
+      '4025': 'Laguna - Pagsanjan',
+      '4026': 'Laguna - Cavinti',
+      '4027': 'Laguna - Lumban',
+      '4028': 'Laguna - Kalayaan',
+      '4029': 'Laguna - Paete',
+      '4030': 'Laguna - Pakil',
+      '4031': 'Laguna - Pangil',
+      '4032': 'Laguna - Siniloan',
+      
+      // BULACAN PROVINCE (3000-3024)
+      '3000': 'Bulacan - Malolos City',
+      '3001': 'Bulacan - Paombong',
+      '3002': 'Bulacan - Hagonoy',
+      '3003': 'Bulacan - Calumpit',
+      '3004': 'Bulacan - Plaridel',
+      '3005': 'Bulacan - Pulilan',
+      '3006': 'Bulacan - Baliuag',
+      '3007': 'Bulacan - Bustos',
+      '3008': 'Bulacan - San Rafael',
+      '3009': 'Bulacan - Dona Remedios Trinidad',
+      '3010': 'Bulacan - San Ildefonso',
+      '3011': 'Bulacan - San Miguel',
+      '3012': 'Bulacan - Angat',
+      '3013': 'Bulacan - Norzagaray',
+      '3014': 'Bulacan - Pandi',
+      '3015': 'Bulacan - Guiguinto',
+      '3016': 'Bulacan - Balagtas',
+      '3017': 'Bulacan - Bulacan',
+      '3018': 'Bulacan - Bocaue',
+      '3019': 'Bulacan - Marilao',
+      '3020': 'Bulacan - Meycauayan',
+      '3021': 'Bulacan - Obando',
+      '3022': 'Bulacan - Santa Maria',
+      '3023': 'Bulacan - San Jose del Monte',
+      '3024': 'Bulacan - Sapang',
+      
+      // PAMPANGA PROVINCE (2000-2023)
+      '2000': 'Pampanga - San Fernando City',
+      '2001': 'Pampanga - Angeles City',
+      '2002': 'Pampanga - Mexico',
+      '2003': 'Pampanga - Arayat',
+      '2004': 'Pampanga - Magalang',
+      '2005': 'Pampanga - Apalit',
+      '2006': 'Pampanga - Masantol',
+      '2007': 'Pampanga - Macabebe',
+      '2008': 'Pampanga - Candaba',
+      '2009': 'Pampanga - Santa Ana',
+      '2010': 'Pampanga - Minalin',
+      '2011': 'Pampanga - Santo Tomas',
+      '2012': 'Pampanga - Guagua',
+      '2013': 'Pampanga - Sasmuan',
+      '2014': 'Pampanga - Lubao',
+      '2015': 'Pampanga - Floridablanca',
+      '2016': 'Pampanga - Porac',
+      '2017': 'Pampanga - Mabalacat City',
+      '2018': 'Pampanga - Bamban',
+      '2019': 'Pampanga - Capas',
+      '2020': 'Pampanga - Concepcion',
+      '2021': 'Pampanga - Tarlac City',
+      '2022': 'Pampanga - San Simon',
+      '2023': 'Pampanga - Bacolor'
+    };
+    
+    function showNewCustomerForm() {
+      document.getElementById('new-customer-form').style.display = 'block';
+      document.getElementById('customer-search').value = '';
+      document.getElementById('customer-list').innerHTML = '';
+    }
+    
+    function hideNewCustomerForm() {
+      document.getElementById('new-customer-form').style.display = 'none';
+      // 폼 초기화
+      document.getElementById('new-customer-name').value = '';
+      document.getElementById('new-clinic-name').value = '';
+      document.getElementById('new-phone').value = '';
+      document.getElementById('new-zipcode').value = '';
+      document.getElementById('new-base-address').value = '';
+      document.getElementById('new-detail-address').value = '';
+    }
+    
+    function searchZipcode() {
+      const zipcode = document.getElementById('new-zipcode').value.trim();
+      const address = PHILIPPINES_ZIPCODES[zipcode];
+      
+      if (address) {
+        document.getElementById('new-base-address').value = address;
+        alert(`✅ 주소를 찾았습니다: ${address}`);
+      } else {
+        alert('⚠️ 해당 우편번호를 찾을 수 없습니다. 다시 확인해주세요.');
+        document.getElementById('new-base-address').value = '';
+      }
+    }
+    
+    function saveNewCustomer() {
+      const name = document.getElementById('new-customer-name').value.trim();
+      const clinicName = document.getElementById('new-clinic-name').value.trim();
+      const phone = document.getElementById('new-phone').value.trim();
+      const zipcode = document.getElementById('new-zipcode').value.trim();
+      const baseAddress = document.getElementById('new-base-address').value.trim();
+      const detailAddress = document.getElementById('new-detail-address').value.trim();
+      
+      // 필수 항목 검증
+      if (!name || !clinicName || !phone || !zipcode || !baseAddress || !detailAddress) {
+        alert('⚠️ 모든 필수 항목을 입력해주세요.');
+        return;
+      }
+      
+      // 새 고객 코드 생성
+      const newCode = 'C' + String(CUSTOMERS.length + 1).padStart(3, '0');
+      const fullAddress = `${baseAddress}, ${detailAddress}`;
+      
+      // 고객 추가
+      const newCustomer = {
+        id: newCode,
+        code: newCode,
+        name: name,
+        clinicName: clinicName,
+        phone: phone,
+        address: fullAddress,
+        type: '신규',
+        contracts: []
+      };
+      
+      CUSTOMERS.push(newCustomer);
+      
+      alert(`✅ 신규 고객이 등록되었습니다!\n고객코드: ${newCode}\n고객명: ${name}`);
+      
+      // 폼 숨기고 고객 목록 갱신
+      hideNewCustomerForm();
+      searchCustomers();
+    }
 
-function saveNewCustomer() {
-  const clinic = document.getElementById('new-clinic').value.trim();
-  const doctor = document.getElementById('new-doctor').value.trim();
-  if (!clinic || !doctor) { alert('Clinic name and doctor name are required.'); return; }
-  const contract = parseInt(document.getElementById('new-contract').value) || 500000;
-  const newC = {
-    id: 'C' + String(customers.length + 1).padStart(3, '0'),
-    clinic, doctor,
-    city: document.getElementById('new-city').value,
-    zip: document.getElementById('new-zip').value,
-    contract, balance: contract,
-    phone: document.getElementById('new-phone').value,
-  };
-  customers.push(newC);
-  saveCustomers();
-  closeAddCustomer();
-  renderCustomerList(customers);
-}
+    // =========================================================================
+    // 장바구니 토글
+    // =========================================================================
+    
+    function toggleCart() {
+      const panel = document.getElementById('cart-panel');
+      const overlay = document.getElementById('cart-overlay');
+      const isOpen = !panel.classList.contains('translate-x-full');
+      
+      if (isOpen) {
+        panel.classList.add('translate-x-full');
+        overlay.style.display = 'none';
+      } else {
+        panel.classList.remove('translate-x-full');
+        overlay.style.display = 'block';
+        updateCartPanel();
+      }
+    }
+    
+    function updateCartPanel() {
+      const count = cart.length;
+      const total = cart.reduce((sum, item) => sum + item.total, 0);
+      const srpTotal = cart.reduce((sum, item) => sum + (item.srpPrice * item.quantity), 0);
+      const discount = srpTotal - total;
+      
+      document.getElementById('cart-count').textContent = count;
+      
+      // 계약 정보 표시
+      if (selectedContract && selectedContract.balance > 0) {
+        document.getElementById('cart-contract-info').style.display = 'block';
+        document.getElementById('cart-contract-discount').textContent = `${selectedContract.discount}% 할인`;
+        document.getElementById('cart-contract-balance').textContent = `₱${selectedContract.balance.toLocaleString()}`;
+        document.getElementById('cart-order-amount').textContent = `₱${total.toLocaleString()}`;
+        
+        const remainingBalance = selectedContract.balance - total;
+        document.getElementById('cart-remaining-balance').textContent = `₱${remainingBalance.toLocaleString()}`;
+        document.getElementById('cart-remaining-balance').className = remainingBalance < 0 ? 'font-bold text-red-600' : 'font-bold text-blue-900';
+      } else {
+        document.getElementById('cart-contract-info').style.display = 'none';
+      }
+      
+      if (count === 0) {
+        document.getElementById('cart-panel-items').style.display = 'none';
+        document.getElementById('cart-empty').style.display = 'block';
+      } else {
+        document.getElementById('cart-empty').style.display = 'none';
+        document.getElementById('cart-panel-items').style.display = 'block';
+        
+        const html = cart.map((item, idx) => `
+          <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex justify-between items-start mb-2">
+              <div class="flex-1">
+                <p class="font-semibold text-gray-900">${item.name}</p>
+                <p class="text-xs text-gray-500 mt-1">${item.refCode}</p>
+              </div>
+              <button onclick="removeFromCart(${idx}); updateCartPanel();" class="text-red-600 hover:text-red-700 ml-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-600">₱${item.unitPrice.toLocaleString()} × ${item.quantity}</span>
+              <span class="font-bold text-orange-600">₱${item.total.toLocaleString()}</span>
+            </div>
+          </div>
+        `).join('');
+        
+        document.getElementById('cart-panel-items').innerHTML = html;
+      }
+      
+      document.getElementById('cart-panel-count').textContent = `${count}개`;
+      document.getElementById('cart-panel-srp').textContent = `₱${srpTotal.toLocaleString()}`;
+      document.getElementById('cart-panel-discount').textContent = `-₱${discount.toLocaleString()}`;
+      document.getElementById('cart-panel-total').textContent = `₱${total.toLocaleString()}`;
+    }
+    
+    function clearCart() {
+      if (cart.length === 0) return;
+      if (confirm('장바구니를 비우시겠습니까?')) {
+        cart.splice(0, cart.length); // 배열 비우기 (참조 유지)
+        if (selectedCustomer) {
+          customerCarts[selectedCustomer.id] = cart; // 고객별 장바구니 업데이트
+        }
+        updateCartDisplay();
+        updateCartPanel();
+      }
+    }
 
-// ── STEP NAVIGATION ───────────────────────────────────────────────────────────
-function gotoStep(n) {
-  if (n >= 2 && !state.customer) { alert('Please select a customer first.'); return; }
-  if (n >= 4 && Object.keys(state.cart).length === 0) { alert('Please add products.'); return; }
-
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById('step-' + i).classList.add('hidden');
-    const sb = document.getElementById('s' + i);
-    sb.className = i < n ? 'flex-1 py-2 text-center text-xs border-b-2 border-green-300 text-green-200 cursor-pointer'
-      : i === n ? 'flex-1 py-2 text-center text-xs border-b-2 border-white/80 text-white font-semibold cursor-pointer'
-      : 'flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer';
-  }
-  document.getElementById('step-' + n).classList.remove('hidden');
-
-  const labels = ['', 'Select Customer', 'Contract Balance', 'Select Products', 'Delivery Method', 'Review Order'];
-  document.getElementById('step-label').textContent = `Step ${n}: ${labels[n]}`;
-
-  if (n === 1) renderCustomerList(customers);
-  if (n === 2) renderContractInfo();
-  if (n === 3) { selectCategory(currentCategory); updateCartSummary(); }
-  if (n === 5) renderReview();
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-renderCustomerList(customers);
-</script>
+    // =========================================================================
+    // 초기화
+    // =========================================================================
+    searchCustomers();
+    updateStepUI();
+  </script>
 </body>
 </html>
