@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEGAGEN Logistics Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .tab-inactive { border-bottom: 2px solid transparent; color: #6b7280; }
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-white border-b shadow-sm sticky top-0 z-10">
+  <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-green-600 rounded-xl flex items-center justify-center text-white text-lg">🚚</div>
+      <div>
+        <h1 class="font-bold text-gray-900">Logistics Dashboard</h1>
+        <p class="text-xs text-gray-400">물류 대시보드 · MEGAGEN Philippines</p>
+      </div>
+    </div>
+    <button onclick="location.href='megagen-erp-home.html'" class="text-xs text-gray-500 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50">← Home</button>
+  </div>
+</header>
+
+<div class="max-w-4xl mx-auto px-4 py-6">
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-4 gap-3 mb-6">
+    <div class="bg-white rounded-xl p-4 border shadow-sm text-center">
+      <p id="stat-pending" class="text-2xl font-bold text-blue-600">0</p>
+      <p class="text-xs text-gray-500 mt-1">대기 Pending</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 border shadow-sm text-center">
+      <p id="stat-processing" class="text-2xl font-bold text-yellow-500">0</p>
+      <p class="text-xs text-gray-500 mt-1">처리중 Processing</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 border shadow-sm text-center">
+      <p id="stat-done" class="text-2xl font-bold text-green-600">0</p>
+      <p class="text-xs text-gray-500 mt-1">완료 Completed</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 border shadow-sm text-center">
+      <p id="stat-rejected" class="text-2xl font-bold text-red-500">0</p>
+      <p class="text-xs text-gray-500 mt-1">반려 Rejected</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-6 mb-4 border-b">
+    <button onclick="switchTab('pending')" id="tab-pending" class="tab-active pb-3 text-sm">접수중 Pending</button>
+    <button onclick="switchTab('processing')" id="tab-processing" class="tab-inactive pb-3 text-sm">처리중 Processing</button>
+    <button onclick="switchTab('done')" id="tab-done" class="tab-inactive pb-3 text-sm">출고완료 Done</button>
+    <button onclick="switchTab('rejected')" id="tab-rejected" class="tab-inactive pb-3 text-sm">접수반려 Rejected</button>
+  </div>
+
+  <!-- Search -->
+  <div class="mb-4">
+    <input type="text" id="search-input" placeholder="Search by customer name or order ID..." oninput="renderOrders()"
+      class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-green-500"/>
+  </div>
+
+  <!-- Order List -->
+  <div id="order-list" class="space-y-3"></div>
+  <p id="empty-msg" class="hidden text-center text-gray-400 py-12 text-sm">No orders in this category.</p>
+
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div id="detail-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-start justify-center pt-12 px-4">
+  <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+      <h3 class="font-bold text-gray-900">Order Details</h3>
+      <button onclick="closeDetail()" class="text-gray-400 hover:text-gray-700">✕</button>
+    </div>
+    <div id="detail-content" class="p-5"></div>
+    <div id="detail-actions" class="p-5 border-t flex gap-3"></div>
+  </div>
+</div>
+
+<!-- REJECT REASON MODAL -->
+<div id="reject-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6">
+    <h3 class="font-bold text-gray-900 mb-4">접수반려 사유 Rejection Reason</h3>
+    <textarea id="reject-reason" rows="3" placeholder="Enter reason for rejection..."
+      class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-500 mb-4"></textarea>
+    <div class="flex gap-3">
+      <button onclick="closeReject()" class="flex-1 border border-gray-300 text-gray-600 py-2.5 rounded-xl text-sm">Cancel</button>
+      <button onclick="confirmReject()" class="flex-1 bg-red-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600">Reject</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentTab = 'pending';
+let currentOrderId = null;
+
+const STATUS_MAP = {
+  'pending':    '접수중',
+  'processing': '처리중',
+  'done':       '출고완료',
+  'rejected':   '접수반려',
+};
+
+const STATUS_STYLE = {
+  '접수중':   'bg-blue-100 text-blue-700',
+  '처리중':   'bg-yellow-100 text-yellow-700',
+  '출고완료': 'bg-green-100 text-green-700',
+  '접수반려': 'bg-red-100 text-red-700',
+};
+
+function getOrders() {
+  return JSON.parse(localStorage.getItem('mg-orders') || '[]');
+}
+
+function saveOrders(orders) {
+  localStorage.setItem('mg-orders', JSON.stringify(orders));
+}
+
+function updateStats() {
+  const orders = getOrders();
+  document.getElementById('stat-pending').textContent    = orders.filter(o => o.status === '접수중').length;
+  document.getElementById('stat-processing').textContent = orders.filter(o => o.status === '처리중').length;
+  document.getElementById('stat-done').textContent       = orders.filter(o => o.status === '출고완료').length;
+  document.getElementById('stat-rejected').textContent   = orders.filter(o => o.status === '접수반려').length;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  ['pending','processing','done','rejected'].forEach(t => {
+    document.getElementById('tab-' + t).className = (t === tab ? 'tab-active' : 'tab-inactive') + ' pb-3 text-sm';
+  });
+  renderOrders();
+}
+
+function renderOrders() {
+  const all = getOrders();
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const statusKey = STATUS_MAP[currentTab];
+  let filtered = all.filter(o => o.status === statusKey);
+  if (q) filtered = filtered.filter(o => o.customerName.toLowerCase().includes(q) || o.id.toLowerCase().includes(q));
+
+  const list = document.getElementById('order-list');
+  const empty = document.getElementById('empty-msg');
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  list.innerHTML = filtered.map(o => {
+    const date = new Date(o.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `
+      <div class="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-all cursor-pointer" onclick="openDetail('${o.id}')">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-semibold text-gray-900 text-sm">${o.customerName}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full ${STATUS_STYLE[o.status]}">${o.status}</span>
+            </div>
+            <p class="text-xs text-gray-500">${o.doctor || ''}</p>
+            <p class="text-xs text-gray-400 mt-1">${o.id} · ${date}</p>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="text-xs text-gray-600">${o.items ? o.items.length : 0} items</span>
+              <span class="text-xs font-semibold text-blue-600">₱${o.total.toLocaleString()}</span>
+              <span class="text-xs text-gray-400">${o.delivery === 'courier' ? '🚚 Courier' : '🏢 Office'}</span>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-gray-300 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openDetail(id) {
+  const orders = getOrders();
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  currentOrderId = id;
+
+  const date = new Date(o.date).toLocaleString('en-PH');
+  document.getElementById('detail-content').innerHTML = `
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h4 class="font-bold text-gray-900">${o.customerName}</h4>
+          <p class="text-sm text-gray-500">${o.doctor || ''}</p>
+        </div>
+        <span class="text-sm px-3 py-1 rounded-full font-medium ${STATUS_STYLE[o.status]}">${o.status}</span>
+      </div>
+      <div class="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 space-y-1">
+        <div class="flex justify-between"><span>Order ID</span><span class="font-mono font-medium">${o.id}</span></div>
+        <div class="flex justify-between"><span>Date</span><span>${date}</span></div>
+        <div class="flex justify-between"><span>Delivery</span><span>${o.delivery === 'courier' ? '🚚 Courier' : '🏢 Office Pick-up'}</span></div>
+        ${o.address ? `<div class="flex justify-between"><span>Address</span><span class="text-right max-w-xs">${o.address}</span></div>` : ''}
+        ${o.notes ? `<div class="flex justify-between"><span>Notes</span><span>${o.notes}</span></div>` : ''}
+        ${o.rejectionReason ? `<div class="flex justify-between text-red-500"><span>Reason</span><span>${o.rejectionReason}</span></div>` : ''}
+      </div>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Products</p>
+        <div class="space-y-2">
+          ${(o.items || []).map(i => `
+            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+              <div>
+                <p class="text-sm font-medium text-gray-900">${i.name}</p>
+                <p class="text-xs text-gray-400">${i.code} · x${i.qty}</p>
+              </div>
+              <span class="text-sm font-semibold text-blue-600">₱${(i.dealer * i.qty).toLocaleString()}</span>
+            </div>`).join('')}
+          <div class="flex justify-between pt-2">
+            <span class="font-bold text-gray-900">Total</span>
+            <span class="font-bold text-lg text-blue-600">₱${o.total.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  let actions = '';
+  if (o.status === '접수중') {
+    actions = `
+      <button onclick="changeStatus('${id}','처리중')" class="flex-1 bg-yellow-500 text-white py-3 rounded-xl font-semibold text-sm hover:bg-yellow-600">처리중으로 Processing</button>
+      <button onclick="openReject('${id}')" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold text-sm hover:bg-red-600">접수반려 Reject</button>`;
+  } else if (o.status === '처리중') {
+    actions = `
+      <button onclick="changeStatus('${id}','출고완료')" class="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-green-700">출고완료 Shipped</button>
+      <button onclick="openReject('${id}')" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold text-sm hover:bg-red-600">접수반려 Reject</button>`;
+  } else {
+    actions = `<button onclick="closeDetail()" class="flex-1 border border-gray-300 text-gray-600 py-3 rounded-xl text-sm">Close</button>`;
+  }
+
+  document.getElementById('detail-actions').innerHTML = `<div class="flex gap-3 w-full">${actions}</div>`;
+  document.getElementById('detail-modal').classList.remove('hidden');
+}
+
+function closeDetail() {
+  document.getElementById('detail-modal').classList.add('hidden');
+  currentOrderId = null;
+}
+
+function changeStatus(id, newStatus) {
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === id);
+  if (idx === -1) return;
+  orders[idx].status = newStatus;
+  if (newStatus === '출고완료') orders[idx].shippedAt = new Date().toISOString();
+  saveOrders(orders);
+  closeDetail();
+  updateStats();
+  renderOrders();
+}
+
+function openReject(id) {
+  currentOrderId = id;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('reject-modal').classList.remove('hidden');
+}
+
+function closeReject() {
+  document.getElementById('reject-modal').classList.add('hidden');
+}
+
+function confirmReject() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { alert('Please enter rejection reason.'); return; }
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === currentOrderId);
+  if (idx === -1) return;
+  orders[idx].status = '접수반려';
+  orders[idx].rejectionReason = reason;
+  saveOrders(orders);
+  closeReject();
+  closeDetail();
+  updateStats();
+  renderOrders();
+}
+
+// DEMO DATA: add sample orders if none exist
+function seedDemoData() {
+  const existing = getOrders();
+  if (existing.length > 0) return;
+  const demo = [
+    { id: 'MG-100001', customerName: 'Bright Smile Dental', doctor: 'Dr. Juan Dela Cruz', items: [{name:'TS III SA Fixture', code:'TS III SA 3.5x10', dealer:4800, qty:3}], total: 14400, delivery: 'courier', address: '123 Ayala Ave, Makati', notes: '', status: '접수중', date: new Date(Date.now()-3600000).toISOString() },
+    { id: 'MG-100002', customerName: 'Sunrise Dental Clinic', doctor: 'Dr. Maria Santos', items: [{name:'Healing Abutment TS', code:'HA-TS-4x4', dealer:950, qty:5}], total: 4750, delivery: 'office', address: '', notes: 'Urgent', status: '처리중', date: new Date(Date.now()-7200000).toISOString() },
+    { id: 'MG-100003', customerName: 'Pacific Dental Center', doctor: 'Dr. Roberto Garcia', items: [{name:'AnyRidge Fixture', code:'ANYRIDGE 4.0x10', dealer:6200, qty:2}], total: 12400, delivery: 'courier', address: 'Cebu IT Park', notes: '', status: '출고완료', date: new Date(Date.now()-86400000).toISOString() },
+    { id: 'MG-100004', customerName: 'MedDental Clinic', doctor: 'Dr. Ana Reyes', items: [{name:'Xenograft', code:'BG-XENOGRAFT-0.5', dealer:7500, qty:1}], total: 7500, delivery: 'courier', address: 'Davao City', notes: '', status: '접수반려', rejectionReason: 'Insufficient contract balance.', date: new Date(Date.now()-172800000).toISOString() },
+  ];
+  saveOrders(demo);
+}
+
+seedDemoData();
+updateStats();
+renderOrders();
+</script>
+</body>
+</html>

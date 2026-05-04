@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEGAGEN Philippines ERP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.12); }
+    .role-btn.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Login Screen -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900">MEGAGEN ERP</h1>
+        <p class="text-gray-500 text-sm mt-1">Philippines Distribution System</p>
+      </div>
+
+      <!-- Role Selection -->
+      <div class="mb-6">
+        <p class="text-sm font-medium text-gray-700 mb-3">Select your role</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="selectRole('admin')" class="role-btn border-2 border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-600 text-center transition-all" id="role-admin">
+            👤 Admin
+          </button>
+          <button onclick="selectRole('sales')" class="role-btn border-2 border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-600 text-center transition-all" id="role-sales">
+            📋 Sales Rep
+          </button>
+          <button onclick="selectRole('logistics')" class="role-btn border-2 border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-600 text-center transition-all" id="role-logistics">
+            🚚 Logistics
+          </button>
+          <button onclick="selectRole('accounting')" class="role-btn border-2 border-gray-200 rounded-xl p-3 text-sm font-medium text-gray-600 text-center transition-all" id="role-accounting">
+            💰 Accounting
+          </button>
+        </div>
+      </div>
+
+      <!-- Name Input -->
+      <div class="mb-4">
+        <label class="text-sm font-medium text-gray-700 block mb-1">Name</label>
+        <input id="login-name" type="text" placeholder="Enter your name"
+          class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
+      </div>
+
+      <!-- PIN -->
+      <div class="mb-6">
+        <label class="text-sm font-medium text-gray-700 block mb-1">PIN</label>
+        <input id="login-pin" type="password" placeholder="••••" maxlength="4"
+          class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"/>
+        <p class="text-xs text-gray-400 mt-1">Demo PIN: 1234</p>
+      </div>
+
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors">
+        Sign In →
+      </button>
+
+      <p id="login-error" class="text-red-500 text-sm text-center mt-3 hidden">Please select a role and enter your name.</p>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboard-screen" class="hidden min-h-screen">
+    <!-- Top Nav -->
+    <header class="bg-white border-b sticky top-0 z-10 shadow-sm">
+      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900 text-sm">MEGAGEN ERP</p>
+            <p class="text-xs text-gray-400">Philippines</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <p class="text-sm font-semibold text-gray-800" id="nav-name"></p>
+            <p class="text-xs text-gray-400" id="nav-role"></p>
+          </div>
+          <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-500 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+      <!-- Welcome Banner -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 mb-8 text-white">
+        <p class="text-blue-100 text-sm">Good day,</p>
+        <h2 class="text-2xl font-bold mt-1" id="welcome-name"></h2>
+        <p class="text-blue-200 text-sm mt-1" id="welcome-role"></p>
+      </div>
+
+      <!-- Quick Stats (Admin/Sales only) -->
+      <div id="stats-row" class="grid grid-cols-3 gap-4 mb-8 hidden">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500">Total Orders Today</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">12</p>
+          <p class="text-xs text-green-500 mt-1">↑ 3 from yesterday</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500">Pending Shipments</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">5</p>
+          <p class="text-xs text-orange-500 mt-1">⚡ Needs action</p>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p class="text-xs text-gray-500">Monthly Revenue</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">₱425K</p>
+          <p class="text-xs text-blue-500 mt-1">85% of target</p>
+        </div>
+      </div>
+
+      <!-- Menu Cards -->
+      <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Applications</h3>
+      <div id="menu-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </main>
+  </div>
+
+  <script>
+    const MENUS = {
+      admin: [
+        { title: 'Order System', subtitle: '주문 시스템', desc: 'Place and manage customer orders', icon: '📋', color: 'blue', file: 'order-system-v4-all-products.html' },
+        { title: 'Logistics Dashboard', subtitle: '물류 대시보드', desc: 'Manage shipments and delivery status', icon: '🚚', color: 'green', file: 'logistics-dashboard.html' },
+        { title: 'KPI Dashboard', subtitle: '실적 대시보드', desc: 'Sales performance and analytics', icon: '📊', color: 'purple', file: 'kpi-dashboard.html' },
+        { title: 'Accounting Manager', subtitle: '회계 관리', desc: 'Payments, PDC and collections', icon: '💰', color: 'yellow', file: 'accounting-manager.html', badge: 'Coming Soon' },
+      ],
+      sales: [
+        { title: 'Order System', subtitle: '주문 시스템', desc: 'Place and manage customer orders', icon: '📋', color: 'blue', file: 'order-system-v4-all-products.html' },
+        { title: 'KPI Dashboard', subtitle: '나의 실적', desc: 'View your sales performance', icon: '📊', color: 'purple', file: 'kpi-dashboard.html' },
+      ],
+      logistics: [
+        { title: 'Logistics Dashboard', subtitle: '물류 대시보드', desc: 'Manage shipments and delivery status', icon: '🚚', color: 'green', file: 'logistics-dashboard.html' },
+      ],
+      accounting: [
+        { title: 'Accounting Manager', subtitle: '회계 관리', desc: 'Payments, PDC and collections', icon: '💰', color: 'yellow', file: 'accounting-manager.html', badge: 'Coming Soon' },
+        { title: 'KPI Dashboard', subtitle: '매출 현황', desc: 'Revenue overview and reports', icon: '📊', color: 'purple', file: 'kpi-dashboard.html' },
+      ]
+    };
+
+    const ROLE_LABELS = { admin: 'Administrator 관리자', sales: 'Sales Representative 세일즈랩', logistics: 'Logistics Manager 물류', accounting: 'Accounting 회계' };
+    const COLOR_MAP = { blue: 'bg-blue-50 text-blue-600', green: 'bg-green-50 text-green-600', purple: 'bg-purple-50 text-purple-600', yellow: 'bg-yellow-50 text-yellow-600' };
+
+    let selectedRole = null;
+
+    function selectRole(role) {
+      selectedRole = role;
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('role-' + role).classList.add('active');
+    }
+
+    function login() {
+      const name = document.getElementById('login-name').value.trim();
+      const pin = document.getElementById('login-pin').value;
+      if (!selectedRole || !name) {
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
+      if (pin !== '1234') {
+        document.getElementById('login-error').textContent = 'Incorrect PIN. Try 1234.';
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+      }
+      document.getElementById('login-error').classList.add('hidden');
+      showDashboard(name, selectedRole);
+    }
+
+    function showDashboard(name, role) {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('dashboard-screen').classList.remove('hidden');
+
+      document.getElementById('nav-name').textContent = name;
+      document.getElementById('nav-role').textContent = ROLE_LABELS[role];
+      document.getElementById('welcome-name').textContent = name;
+      document.getElementById('welcome-role').textContent = ROLE_LABELS[role];
+
+      if (role === 'admin' || role === 'sales') {
+        document.getElementById('stats-row').classList.remove('hidden');
+      }
+
+      const cards = MENUS[role] || [];
+      document.getElementById('menu-cards').innerHTML = cards.map(m => `
+        <div class="card-hover bg-white rounded-2xl p-6 shadow-sm border border-gray-100 cursor-pointer" onclick="${m.badge ? 'alert(\'Coming Soon!\')' : `openApp('${m.file}')`}">
+          <div class="flex items-start justify-between">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${COLOR_MAP[m.color]} mb-4">${m.icon}</div>
+            ${m.badge ? `<span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-medium">${m.badge}</span>` : '<span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">Active</span>'}
+          </div>
+          <h3 class="font-bold text-gray-900">${m.title}</h3>
+          <p class="text-xs text-gray-400 mb-1">${m.subtitle}</p>
+          <p class="text-sm text-gray-500 mt-2">${m.desc}</p>
+        </div>
+      `).join('');
+    }
+
+    function openApp(file) {
+      window.open(file, '_blank');
+    }
+
+    function logout() {
+      selectedRole = null;
+      document.getElementById('login-name').value = '';
+      document.getElementById('login-pin').value = '';
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('stats-row').classList.add('hidden');
+      document.getElementById('dashboard-screen').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

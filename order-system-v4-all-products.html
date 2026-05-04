@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEGAGEN Order System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .step-active { border-color: #2563eb; color: #2563eb; font-weight: 600; background: #eff6ff; }
+    .step-done { border-color: #10b981; color: #10b981; background: #f0fdf4; }
+    .step-inactive { border-color: #e5e7eb; color: #9ca3af; }
+    .product-card { transition: all 0.15s; }
+    .product-card:hover { border-color: #93c5fd; background: #f8faff; }
+    .product-card.selected { border-color: #2563eb; background: #eff6ff; }
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- HEADER -->
+<header class="bg-blue-600 text-white sticky top-0 z-20 shadow-lg">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div>
+      <h1 class="font-bold text-lg">MEGAGEN Order System</h1>
+      <p class="text-blue-200 text-xs" id="step-label">Step 1: Select Customer</p>
+    </div>
+    <button onclick="showOrderHistory()" class="bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+      📋 Orders
+    </button>
+  </div>
+  <!-- Step Indicator -->
+  <div class="flex max-w-3xl mx-auto">
+    <div id="s1" class="flex-1 py-2 text-center text-xs border-b-2 border-white/80 text-white font-semibold cursor-pointer" onclick="gotoStep(1)">Customer</div>
+    <div id="s2" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(2)">Contract</div>
+    <div id="s3" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(3)">Products</div>
+    <div id="s4" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(4)">Delivery</div>
+    <div id="s5" class="flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer" onclick="gotoStep(5)">Review</div>
+  </div>
+</header>
+
+<div class="max-w-3xl mx-auto px-4 py-6">
+
+  <!-- STEP 1: Customer -->
+  <div id="step-1">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Select Customer</h2>
+    <div class="mb-4">
+      <input id="customer-search" type="text" placeholder="Search customer name or code..." oninput="filterCustomers()"
+        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500"/>
+    </div>
+    <div id="customer-list" class="space-y-2 mb-6"></div>
+    <button onclick="showAddCustomer()" class="w-full border-2 border-dashed border-blue-300 text-blue-600 rounded-xl py-3 text-sm font-medium hover:bg-blue-50 transition-colors">
+      + Add New Customer
+    </button>
+  </div>
+
+  <!-- STEP 2: Contract Balance -->
+  <div id="step-2" class="hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-1">Contract Balance</h2>
+    <p class="text-gray-500 text-sm mb-6">Customer: <span id="s2-customer" class="font-semibold text-gray-800"></span></p>
+    <div id="contract-info" class="bg-white rounded-2xl p-6 shadow-sm border"></div>
+    <div id="contract-warning" class="mt-4 rounded-xl p-4 hidden"></div>
+    <button onclick="gotoStep(3)" class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+      Continue to Products →
+    </button>
+  </div>
+
+  <!-- STEP 3: Products -->
+  <div id="step-3" class="hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Select Products</h2>
+    <!-- Category Tabs -->
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-4">
+      <button onclick="selectCategory('Fixture')" id="cat-Fixture" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600 text-white">Fixture</button>
+      <button onclick="selectCategory('Cover Screw')" id="cat-Cover Screw" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Cover Screw</button>
+      <button onclick="selectCategory('Healing Abutment')" id="cat-Healing Abutment" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Healing Abutment</button>
+      <button onclick="selectCategory('Impression Coping')" id="cat-Impression Coping" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Impression Coping</button>
+      <button onclick="selectCategory('Abutment')" id="cat-Abutment" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Abutment</button>
+      <button onclick="selectCategory('Membrane')" id="cat-Membrane" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Membrane</button>
+      <button onclick="selectCategory('Bone Graft')" id="cat-Bone Graft" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Bone Graft</button>
+      <button onclick="selectCategory('Accessory')" id="cat-Accessory" class="cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Accessory</button>
+    </div>
+    <div id="product-list" class="space-y-2 mb-4"></div>
+    <!-- Cart Summary -->
+    <div id="cart-summary" class="bg-blue-50 rounded-xl p-4 border border-blue-100 hidden">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-semibold text-blue-800">Cart</span>
+        <span id="cart-count" class="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full"></span>
+      </div>
+      <div id="cart-items" class="space-y-1 text-xs text-blue-700"></div>
+      <div class="mt-2 pt-2 border-t border-blue-200 flex justify-between">
+        <span class="text-sm font-semibold text-blue-800">Total</span>
+        <span id="cart-total" class="text-sm font-bold text-blue-900"></span>
+      </div>
+    </div>
+    <button onclick="gotoStep(4)" class="mt-4 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+      Continue to Delivery →
+    </button>
+  </div>
+
+  <!-- STEP 4: Delivery -->
+  <div id="step-4" class="hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Delivery Method</h2>
+    <div class="space-y-3">
+      <label class="block bg-white border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 transition-colors" id="delivery-courier-card">
+        <input type="radio" name="delivery" value="courier" onchange="selectDelivery('courier')" class="hidden">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🚚</span>
+          <div>
+            <p class="font-semibold text-gray-900">Courier Delivery</p>
+            <p class="text-sm text-gray-500">Shipped to clinic address</p>
+          </div>
+        </div>
+      </label>
+      <label class="block bg-white border-2 border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 transition-colors" id="delivery-office-card">
+        <input type="radio" name="delivery" value="office" onchange="selectDelivery('office')" class="hidden">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🏢</span>
+          <div>
+            <p class="font-semibold text-gray-900">Office Pick-up</p>
+            <p class="text-sm text-gray-500">Collect from MEGAGEN office</p>
+          </div>
+        </div>
+      </label>
+    </div>
+    <div id="delivery-address-block" class="mt-4 bg-white rounded-xl p-4 border hidden">
+      <p class="text-sm font-medium text-gray-700 mb-2">Delivery Address</p>
+      <textarea id="delivery-address" rows="3" placeholder="Enter delivery address..."
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"></textarea>
+      <input id="delivery-zip" type="text" placeholder="Postal Code"
+        class="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"/>
+    </div>
+    <div class="mt-4">
+      <label class="text-sm font-medium text-gray-700 block mb-1">Special Instructions (optional)</label>
+      <textarea id="special-notes" rows="2" placeholder="Any special requests..."
+        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500"></textarea>
+    </div>
+    <button onclick="gotoStep(5)" class="mt-4 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+      Review Order →
+    </button>
+  </div>
+
+  <!-- STEP 5: Review & Submit -->
+  <div id="step-5" class="hidden">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Order Review</h2>
+    <div id="order-review" class="space-y-4"></div>
+    <button onclick="submitOrder()" class="mt-6 w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-colors text-base">
+      ✓ Submit Order
+    </button>
+    <button onclick="gotoStep(4)" class="mt-2 w-full border border-gray-300 text-gray-600 py-3 rounded-xl text-sm hover:bg-gray-50">
+      ← Back
+    </button>
+  </div>
+
+</div>
+
+<!-- ORDER HISTORY MODAL -->
+<div id="history-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-start justify-center pt-16 px-4">
+  <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl max-h-[80vh] overflow-hidden flex flex-col">
+    <div class="p-5 border-b flex items-center justify-between">
+      <h3 class="font-bold text-gray-900">Order History 주문 내역</h3>
+      <button onclick="closeHistory()" class="text-gray-400 hover:text-gray-700">✕</button>
+    </div>
+    <div id="history-content" class="overflow-y-auto p-4 flex-1"></div>
+  </div>
+</div>
+
+<!-- ADD CUSTOMER MODAL -->
+<div id="add-customer-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-gray-900">Add New Customer</h3>
+      <button onclick="closeAddCustomer()" class="text-gray-400 hover:text-gray-700">✕</button>
+    </div>
+    <div class="space-y-3">
+      <div><label class="text-xs font-medium text-gray-600">Clinic Name *</label>
+        <input id="new-clinic" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+      <div><label class="text-xs font-medium text-gray-600">Doctor Name *</label>
+        <input id="new-doctor" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+      <div><label class="text-xs font-medium text-gray-600">City / Province</label>
+        <input id="new-city" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+      <div><label class="text-xs font-medium text-gray-600">Postal Code</label>
+        <input id="new-zip" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+      <div><label class="text-xs font-medium text-gray-600">Contract Amount (₱)</label>
+        <input id="new-contract" type="number" placeholder="500000" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+      <div><label class="text-xs font-medium text-gray-600">Phone</label>
+        <input id="new-phone" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1 focus:outline-none focus:border-blue-500"/></div>
+    </div>
+    <button onclick="saveNewCustomer()" class="mt-5 w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+      Save Customer
+    </button>
+  </div>
+</div>
+
+<!-- SUCCESS MODAL -->
+<div id="success-modal" class="hidden fixed inset-0 z-50 modal-overlay flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-8 text-center">
+    <div class="text-5xl mb-4">✅</div>
+    <h3 class="text-xl font-bold text-gray-900 mb-2">Order Submitted!</h3>
+    <p class="text-gray-500 text-sm mb-2">주문이 접수되었습니다</p>
+    <p id="success-order-no" class="text-blue-600 font-semibold text-sm mb-6"></p>
+    <button onclick="resetOrder()" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+      New Order
+    </button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const PRODUCTS = {
+  'Fixture': [
+    { code: 'TS III SA 3.5x10', name: 'TS III SA Fixture', size: '3.5 x 10mm', srp: 8500, dealer: 4800 },
+    { code: 'TS III SA 4.0x10', name: 'TS III SA Fixture', size: '4.0 x 10mm', srp: 8500, dealer: 4800 },
+    { code: 'TS III SA 4.5x10', name: 'TS III SA Fixture', size: '4.5 x 10mm', srp: 8500, dealer: 4800 },
+    { code: 'TS III SA 5.0x10', name: 'TS III SA Fixture', size: '5.0 x 10mm', srp: 8500, dealer: 4800 },
+    { code: 'ANYRIDGE 3.5x10', name: 'AnyRidge Fixture', size: '3.5 x 10mm', srp: 11000, dealer: 6200 },
+    { code: 'ANYRIDGE 4.0x10', name: 'AnyRidge Fixture', size: '4.0 x 10mm', srp: 11000, dealer: 6200 },
+    { code: 'ANYRIDGE 4.5x10', name: 'AnyRidge Fixture', size: '4.5 x 10mm', srp: 11000, dealer: 6200 },
+    { code: 'RESCUE 4.0x10', name: 'Rescue Fixture', size: '4.0 x 10mm', srp: 12000, dealer: 6800 },
+  ],
+  'Cover Screw': [
+    { code: 'CS-TS-3.5', name: 'Cover Screw TS III', size: '3.5mm', srp: 800, dealer: 400 },
+    { code: 'CS-TS-4.0', name: 'Cover Screw TS III', size: '4.0mm', srp: 800, dealer: 400 },
+    { code: 'CS-AR-3.5', name: 'Cover Screw AnyRidge', size: '3.5mm', srp: 900, dealer: 500 },
+    { code: 'CS-AR-4.0', name: 'Cover Screw AnyRidge', size: '4.0mm', srp: 900, dealer: 500 },
+  ],
+  'Healing Abutment': [
+    { code: 'HA-TS-4x4', name: 'Healing Abutment TS', size: '4.0 x 4mm', srp: 1800, dealer: 950 },
+    { code: 'HA-TS-4x6', name: 'Healing Abutment TS', size: '4.0 x 6mm', srp: 1800, dealer: 950 },
+    { code: 'HA-AR-5x4', name: 'Healing Abutment AR', size: '5.0 x 4mm', srp: 2000, dealer: 1100 },
+    { code: 'HA-AR-5x6', name: 'Healing Abutment AR', size: '5.0 x 6mm', srp: 2000, dealer: 1100 },
+  ],
+  'Impression Coping': [
+    { code: 'IC-TS-OPEN', name: 'Impression Coping TS Open', size: 'Open Tray', srp: 2500, dealer: 1400 },
+    { code: 'IC-TS-CLOSED', name: 'Impression Coping TS Closed', size: 'Closed Tray', srp: 2500, dealer: 1400 },
+    { code: 'IC-AR-OPEN', name: 'Impression Coping AR Open', size: 'Open Tray', srp: 2800, dealer: 1600 },
+  ],
+  'Abutment': [
+    { code: 'ABU-STRAIGHT-4', name: 'Straight Abutment', size: '4.0mm', srp: 3500, dealer: 2000 },
+    { code: 'ABU-ANGLE-15', name: 'Angled Abutment 15°', size: '4.0mm', srp: 4200, dealer: 2400 },
+    { code: 'ABU-UCLA', name: 'UCLA Abutment', size: 'Universal', srp: 3800, dealer: 2100 },
+  ],
+  'Membrane': [
+    { code: 'MEM-RESORBABLE-S', name: 'Resorbable Membrane', size: '20x30mm', srp: 12000, dealer: 7000 },
+    { code: 'MEM-RESORBABLE-L', name: 'Resorbable Membrane', size: '30x40mm', srp: 16000, dealer: 9500 },
+    { code: 'MEM-TITANIUM', name: 'Titanium Mesh', size: '30x40mm', srp: 22000, dealer: 13000 },
+  ],
+  'Bone Graft': [
+    { code: 'BG-XENOGRAFT-0.25', name: 'Xenograft (Bovine)', size: '0.25g', srp: 8000, dealer: 4500 },
+    { code: 'BG-XENOGRAFT-0.5', name: 'Xenograft (Bovine)', size: '0.5g', srp: 13000, dealer: 7500 },
+    { code: 'BG-ALLOGRAFT-0.5', name: 'Allograft', size: '0.5g', srp: 15000, dealer: 8800 },
+  ],
+  'Accessory': [
+    { code: 'ACC-DRIVER-HEX', name: 'Hex Driver', size: '1.2mm', srp: 1500, dealer: 800 },
+    { code: 'ACC-RATCHET', name: 'Ratchet Wrench', size: 'Universal', srp: 8500, dealer: 5000 },
+    { code: 'ACC-TORQUE', name: 'Torque Wrench 35Ncm', size: 'Universal', srp: 25000, dealer: 15000 },
+    { code: 'ACC-DRILL-KIT', name: 'Drill Kit Set', size: 'TS System', srp: 45000, dealer: 28000 },
+  ]
+};
+
+let customers = JSON.parse(localStorage.getItem('mg-customers') || '[]');
+let orders = JSON.parse(localStorage.getItem('mg-orders') || '[]');
+
+if (customers.length === 0) {
+  customers = [
+    { id: 'C001', clinic: 'Bright Smile Dental', doctor: 'Dr. Juan Dela Cruz', city: 'Makati', zip: '1200', contract: 500000, balance: 350000, phone: '09171234567' },
+    { id: 'C002', clinic: 'Sunrise Dental Clinic', doctor: 'Dr. Maria Santos', city: 'Quezon City', zip: '1100', contract: 300000, balance: 240000, phone: '09181234567' },
+    { id: 'C003', clinic: 'Pacific Dental Center', doctor: 'Dr. Roberto Garcia', city: 'Cebu City', zip: '6000', contract: 800000, balance: 85000, phone: '09191234567' },
+    { id: 'C004', clinic: 'MedDental Clinic', doctor: 'Dr. Ana Reyes', city: 'Davao City', zip: '8000', contract: 400000, balance: 35000, phone: '09201234567' },
+  ];
+  saveCustomers();
+}
+
+let state = { customer: null, cart: {}, delivery: null };
+let currentCategory = 'Fixture';
+
+// ── CUSTOMERS ─────────────────────────────────────────────────────────────────
+function saveCustomers() { localStorage.setItem('mg-customers', JSON.stringify(customers)); }
+function saveOrders() { localStorage.setItem('mg-orders', JSON.stringify(orders)); }
+
+function filterCustomers() {
+  const q = document.getElementById('customer-search').value.toLowerCase();
+  const filtered = customers.filter(c =>
+    c.clinic.toLowerCase().includes(q) || c.doctor.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+  );
+  renderCustomerList(filtered);
+}
+
+function renderCustomerList(list) {
+  const el = document.getElementById('customer-list');
+  if (!list || list.length === 0) {
+    el.innerHTML = '<p class="text-center text-gray-400 py-4 text-sm">No customers found</p>';
+    return;
+  }
+  el.innerHTML = list.map(c => {
+    const pct = (c.balance / c.contract) * 100;
+    const statusColor = pct <= 10 ? 'bg-red-100 text-red-600' : pct <= 30 ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600';
+    const statusText = pct <= 10 ? '⚠ Critical' : pct <= 30 ? '⚡ Low' : '✓ OK';
+    return `
+      <div onclick="selectCustomer('${c.id}')" class="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-semibold text-gray-900 text-sm">${c.clinic}</p>
+            <p class="text-xs text-gray-500">${c.doctor} · ${c.city}</p>
+            <p class="text-xs text-gray-400 mt-0.5">${c.id}</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColor}">${statusText}</span>
+            <p class="text-xs text-gray-500 mt-1">₱${c.balance.toLocaleString()} left</p>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectCustomer(id) {
+  state.customer = customers.find(c => c.id === id);
+  state.cart = {};
+  gotoStep(2);
+}
+
+// ── STEP 2: CONTRACT ──────────────────────────────────────────────────────────
+function renderContractInfo() {
+  const c = state.customer;
+  const pct = (c.balance / c.contract) * 100;
+  const barColor = pct <= 10 ? 'bg-red-500' : pct <= 30 ? 'bg-orange-400' : 'bg-green-500';
+
+  document.getElementById('s2-customer').textContent = `${c.clinic} (${c.doctor})`;
+  document.getElementById('contract-info').innerHTML = `
+    <div class="flex justify-between mb-1">
+      <span class="text-sm text-gray-600">Contract Amount</span>
+      <span class="font-semibold text-gray-900">₱${c.contract.toLocaleString()}</span>
+    </div>
+    <div class="flex justify-between mb-3">
+      <span class="text-sm text-gray-600">Remaining Balance</span>
+      <span class="font-bold text-lg ${pct <= 10 ? 'text-red-600' : pct <= 30 ? 'text-orange-500' : 'text-green-600'}">₱${c.balance.toLocaleString()}</span>
+    </div>
+    <div class="w-full bg-gray-100 rounded-full h-3 mb-1">
+      <div class="${barColor} h-3 rounded-full transition-all" style="width:${Math.min(pct,100)}%"></div>
+    </div>
+    <p class="text-xs text-right text-gray-500">${pct.toFixed(1)}% remaining</p>
+  `;
+
+  const warn = document.getElementById('contract-warning');
+  if (pct <= 10) {
+    warn.className = 'mt-4 rounded-xl p-4 bg-red-50 border border-red-200 text-red-700';
+    warn.innerHTML = '⚠️ <strong>Critical:</strong> Balance below 10%. Re-contract required before placing new orders.';
+    warn.classList.remove('hidden');
+  } else if (pct <= 30) {
+    warn.className = 'mt-4 rounded-xl p-4 bg-orange-50 border border-orange-200 text-orange-700';
+    warn.innerHTML = '⚡ <strong>Low Balance:</strong> Below 30%. Please initiate re-contract process soon.';
+    warn.classList.remove('hidden');
+  } else {
+    warn.classList.add('hidden');
+  }
+}
+
+// ── STEP 3: PRODUCTS ──────────────────────────────────────────────────────────
+function selectCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.className = 'cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600';
+  });
+  document.getElementById('cat-' + cat).className = 'cat-btn whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600 text-white';
+  renderProducts();
+}
+
+function renderProducts() {
+  const products = PRODUCTS[currentCategory] || [];
+  document.getElementById('product-list').innerHTML = products.map(p => {
+    const qty = (state.cart[p.code] || {}).qty || 0;
+    return `
+      <div class="product-card bg-white border border-gray-200 rounded-xl p-4 ${qty > 0 ? 'selected border-blue-400 bg-blue-50' : ''}">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-gray-900">${p.name}</p>
+            <p class="text-xs text-gray-500">${p.code} · ${p.size}</p>
+            <p class="text-sm font-bold text-blue-600 mt-1">₱${p.dealer.toLocaleString()} <span class="text-xs font-normal text-gray-400">dealer</span></p>
+          </div>
+          <div class="flex items-center gap-2 ml-3">
+            <button onclick="changeQty('${p.code}', -1, '${currentCategory}')" class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full text-lg font-bold text-gray-600 flex items-center justify-center">−</button>
+            <span class="w-8 text-center font-bold text-gray-900" id="qty-${p.code}">${qty}</span>
+            <button onclick="changeQty('${p.code}', 1, '${currentCategory}')" class="w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full text-lg font-bold text-white flex items-center justify-center">+</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function changeQty(code, delta, cat) {
+  const product = PRODUCTS[cat].find(p => p.code === code);
+  if (!state.cart[code]) state.cart[code] = { ...product, qty: 0 };
+  state.cart[code].qty = Math.max(0, state.cart[code].qty + delta);
+  if (state.cart[code].qty === 0) delete state.cart[code];
+  const el = document.getElementById('qty-' + code);
+  if (el) el.textContent = (state.cart[code] || {}).qty || 0;
+  updateCartSummary();
+}
+
+function updateCartSummary() {
+  const items = Object.values(state.cart);
+  const el = document.getElementById('cart-summary');
+  if (items.length === 0) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
+  const count = items.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-count').textContent = count + ' items';
+  document.getElementById('cart-items').innerHTML = items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.qty}</span><span>₱${(i.dealer*i.qty).toLocaleString()}</span></div>`).join('');
+  document.getElementById('cart-total').textContent = '₱' + total.toLocaleString();
+}
+
+// ── STEP 4: DELIVERY ──────────────────────────────────────────────────────────
+function selectDelivery(type) {
+  state.delivery = type;
+  document.getElementById('delivery-courier-card').classList.toggle('border-blue-500', type === 'courier');
+  document.getElementById('delivery-courier-card').classList.toggle('bg-blue-50', type === 'courier');
+  document.getElementById('delivery-office-card').classList.toggle('border-blue-500', type === 'office');
+  document.getElementById('delivery-office-card').classList.toggle('bg-blue-50', type === 'office');
+  document.getElementById('delivery-address-block').classList.toggle('hidden', type !== 'courier');
+}
+
+// ── STEP 5: REVIEW ────────────────────────────────────────────────────────────
+function renderReview() {
+  const c = state.customer;
+  const items = Object.values(state.cart);
+  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
+  const newBalance = c.balance - total;
+  const pctAfter = (newBalance / c.contract) * 100;
+
+  let balanceWarning = '';
+  if (newBalance < 0) {
+    balanceWarning = `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">⛔ Order amount exceeds contract balance by ₱${Math.abs(newBalance).toLocaleString()}. Order may be rejected.</div>`;
+  } else if (pctAfter <= 10) {
+    balanceWarning = `<div class="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">⚠️ After this order, balance drops to ${pctAfter.toFixed(1)}%. Re-contract urgently needed.</div>`;
+  } else if (pctAfter <= 30) {
+    balanceWarning = `<div class="bg-orange-50 border border-orange-200 rounded-xl p-3 text-orange-700 text-sm">⚡ After this order, balance drops to ${pctAfter.toFixed(1)}%. Please initiate re-contract.</div>`;
+  }
+
+  document.getElementById('order-review').innerHTML = `
+    <div class="bg-white rounded-xl p-4 border">
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Customer</p>
+      <p class="font-semibold text-gray-900">${c.clinic}</p>
+      <p class="text-sm text-gray-600">${c.doctor}</p>
+    </div>
+    <div class="bg-white rounded-xl p-4 border">
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Products (${items.length} items)</p>
+      <div class="space-y-1">
+        ${items.map(i => `<div class="flex justify-between text-sm"><span class="text-gray-700">${i.name} x${i.qty}</span><span class="font-medium">₱${(i.dealer*i.qty).toLocaleString()}</span></div>`).join('')}
+        <div class="flex justify-between pt-2 border-t font-bold"><span>Total</span><span class="text-blue-600">₱${total.toLocaleString()}</span></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl p-4 border">
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Delivery</p>
+      <p class="text-sm text-gray-800">${state.delivery === 'courier' ? '🚚 Courier Delivery' : '🏢 Office Pick-up'}</p>
+      ${state.delivery === 'courier' ? `<p class="text-xs text-gray-500 mt-1">${document.getElementById('delivery-address').value || 'No address entered'}</p>` : ''}
+    </div>
+    <div class="bg-white rounded-xl p-4 border">
+      <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Balance After Order</p>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Current Balance</span>
+        <span class="font-medium">₱${c.balance.toLocaleString()}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Order Amount</span>
+        <span class="font-medium text-red-500">−₱${total.toLocaleString()}</span>
+      </div>
+      <div class="flex justify-between pt-2 border-t">
+        <span class="text-sm font-semibold">Remaining</span>
+        <span class="font-bold ${newBalance < 0 ? 'text-red-600' : 'text-green-600'}">₱${newBalance.toLocaleString()}</span>
+      </div>
+    </div>
+    ${balanceWarning}
+  `;
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+function submitOrder() {
+  const c = state.customer;
+  const items = Object.values(state.cart);
+  if (items.length === 0) { alert('Please add products to cart.'); return; }
+  if (!state.delivery) { alert('Please select delivery method.'); return; }
+
+  const total = items.reduce((s, i) => s + i.dealer * i.qty, 0);
+  const orderNo = 'MG-' + Date.now().toString().slice(-6);
+  const order = {
+    id: orderNo,
+    customerId: c.id,
+    customerName: c.clinic,
+    doctor: c.doctor,
+    items: items,
+    total: total,
+    delivery: state.delivery,
+    address: document.getElementById('delivery-address').value,
+    notes: document.getElementById('special-notes').value,
+    status: '접수중',
+    date: new Date().toISOString(),
+  };
+  orders.unshift(order);
+  saveOrders();
+
+  // Deduct balance
+  const idx = customers.findIndex(cu => cu.id === c.id);
+  customers[idx].balance -= total;
+  saveCustomers();
+
+  document.getElementById('success-order-no').textContent = 'Order #' + orderNo;
+  document.getElementById('success-modal').classList.remove('hidden');
+}
+
+function resetOrder() {
+  state = { customer: null, cart: {}, delivery: null };
+  document.getElementById('success-modal').classList.add('hidden');
+  gotoStep(1);
+  renderCustomerList(customers);
+}
+
+// ── ORDER HISTORY ─────────────────────────────────────────────────────────────
+function showOrderHistory() {
+  const modal = document.getElementById('history-modal');
+  modal.classList.remove('hidden');
+  const statusColors = { '접수중': 'bg-blue-100 text-blue-700', '처리중': 'bg-yellow-100 text-yellow-700', '출고완료': 'bg-green-100 text-green-700', '접수반려': 'bg-red-100 text-red-700' };
+  document.getElementById('history-content').innerHTML = orders.length === 0
+    ? '<p class="text-center text-gray-400 py-8">No orders yet</p>'
+    : orders.map(o => `
+      <div class="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="font-semibold text-gray-900 text-sm">${o.customerName}</p>
+            <p class="text-xs text-gray-400">${o.id} · ${new Date(o.date).toLocaleDateString()}</p>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full font-medium ${statusColors[o.status] || 'bg-gray-100 text-gray-600'}">${o.status}</span>
+        </div>
+        <div class="text-sm text-gray-600">${o.items.length} products · <span class="font-semibold text-blue-600">₱${o.total.toLocaleString()}</span></div>
+        <div class="text-xs text-gray-400 mt-1">${o.delivery === 'courier' ? '🚚 Courier' : '🏢 Office Pick-up'}</div>
+      </div>`).join('');
+}
+
+function closeHistory() { document.getElementById('history-modal').classList.add('hidden'); }
+
+// ── NEW CUSTOMER ──────────────────────────────────────────────────────────────
+function showAddCustomer() { document.getElementById('add-customer-modal').classList.remove('hidden'); }
+function closeAddCustomer() { document.getElementById('add-customer-modal').classList.add('hidden'); }
+
+function saveNewCustomer() {
+  const clinic = document.getElementById('new-clinic').value.trim();
+  const doctor = document.getElementById('new-doctor').value.trim();
+  if (!clinic || !doctor) { alert('Clinic name and doctor name are required.'); return; }
+  const contract = parseInt(document.getElementById('new-contract').value) || 500000;
+  const newC = {
+    id: 'C' + String(customers.length + 1).padStart(3, '0'),
+    clinic, doctor,
+    city: document.getElementById('new-city').value,
+    zip: document.getElementById('new-zip').value,
+    contract, balance: contract,
+    phone: document.getElementById('new-phone').value,
+  };
+  customers.push(newC);
+  saveCustomers();
+  closeAddCustomer();
+  renderCustomerList(customers);
+}
+
+// ── STEP NAVIGATION ───────────────────────────────────────────────────────────
+function gotoStep(n) {
+  if (n >= 2 && !state.customer) { alert('Please select a customer first.'); return; }
+  if (n >= 4 && Object.keys(state.cart).length === 0) { alert('Please add products.'); return; }
+
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('step-' + i).classList.add('hidden');
+    const sb = document.getElementById('s' + i);
+    sb.className = i < n ? 'flex-1 py-2 text-center text-xs border-b-2 border-green-300 text-green-200 cursor-pointer'
+      : i === n ? 'flex-1 py-2 text-center text-xs border-b-2 border-white/80 text-white font-semibold cursor-pointer'
+      : 'flex-1 py-2 text-center text-xs border-b-2 border-blue-400/50 text-blue-200 cursor-pointer';
+  }
+  document.getElementById('step-' + n).classList.remove('hidden');
+
+  const labels = ['', 'Select Customer', 'Contract Balance', 'Select Products', 'Delivery Method', 'Review Order'];
+  document.getElementById('step-label').textContent = `Step ${n}: ${labels[n]}`;
+
+  if (n === 1) renderCustomerList(customers);
+  if (n === 2) renderContractInfo();
+  if (n === 3) { selectCategory(currentCategory); updateCartSummary(); }
+  if (n === 5) renderReview();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderCustomerList(customers);
+</script>
+</body>
+</html>
